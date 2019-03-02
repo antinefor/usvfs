@@ -2062,52 +2062,37 @@ HANDLE WINAPI usvfs::hook_FindFirstFileExW(LPCWSTR lpFileName, FINDEX_INFO_LEVEL
     return res;
   }
 
-  WCHAR *tempPath = new WCHAR[MAX_PATH];
-  ::GetTempPathW(MAX_PATH, tempPath);
-  ::GetLongPathNameW(tempPath, tempPath, MAX_PATH);
-  std::wstring tempPathStr(tempPath);
-  tempPathStr.pop_back(); // Remove trailing slash
-  delete[] tempPath;
-
   fs::path finalPath;
   RerouteW reroute;
   fs::path originalPath;
 
   bool usedRewrite = false;
 
-  if (boost::algorithm::icontains(lpFileName, tempPathStr)) {
-    PRE_REALCALL
-    //Force the mutEXHook to match NtQueryDirectoryFile so it calls the non hooked NtQueryDirectoryFile.
-    FunctionGroupLock lock(MutExHookGroup::FIND_FILES);
-    res = ::FindFirstFileExW(lpFileName, fInfoLevelId, lpFindFileData, fSearchOp, lpSearchFilter, dwAdditionalFlags);
-    POST_REALCALL
-  } else {
-    // We need to do some trickery here, since we only want to use the hooked NtQueryDirectoryFile for rerouted locations we need to check if the Directory path has been routed instead of the full path.
-    originalPath = RerouteW::canonizePath(RerouteW::absolutePath(lpFileName));
-    PRE_REALCALL
+  // We need to do some trickery here, since we only want to use the hooked NtQueryDirectoryFile for rerouted locations we need to check if the Directory path has been routed instead of the full path.
+  originalPath = RerouteW::canonizePath(RerouteW::absolutePath(lpFileName));
+  PRE_REALCALL
     res = ::FindFirstFileExW(originalPath.c_str(), fInfoLevelId, lpFindFileData, fSearchOp, lpSearchFilter, dwAdditionalFlags);
-    POST_REALCALL
+  POST_REALCALL
 
-    if (res == INVALID_HANDLE_VALUE) {
-      fs::path searchPath = originalPath.filename();
-      fs::path parentPath = originalPath.parent_path();
-      std::wstring findPath = parentPath.wstring();
-      while (findPath.find(L"*?<>\"", 0, 1) != std::wstring::npos) {
-        searchPath = parentPath.filename() / searchPath;
-        parentPath = parentPath.parent_path();
-        findPath = parentPath.wstring();
-      }
-      reroute = RerouteW::create(READ_CONTEXT(), callContext, parentPath.c_str());
-      if (reroute.wasRerouted()) {
-        finalPath = reroute.fileName();
-        finalPath /= searchPath.wstring();
-      }
-      if (!finalPath.empty()) {
-        PRE_REALCALL
+  if (res == INVALID_HANDLE_VALUE) {
+    fs::path searchPath = originalPath.filename();
+    fs::path parentPath = originalPath.parent_path();
+    std::wstring findPath = parentPath.wstring();
+    while (findPath.find(L"*?<>\"", 0, 1) != std::wstring::npos) {
+      searchPath = parentPath.filename() / searchPath;
+      parentPath = parentPath.parent_path();
+      findPath = parentPath.wstring();
+    }
+    reroute = RerouteW::create(READ_CONTEXT(), callContext, parentPath.c_str());
+    if (reroute.wasRerouted()) {
+      finalPath = reroute.fileName();
+      finalPath /= searchPath.wstring();
+    }
+    if (!finalPath.empty()) {
+      PRE_REALCALL
         usedRewrite = true;
         res = ::FindFirstFileExW(finalPath.c_str(), fInfoLevelId, lpFindFileData, fSearchOp, lpSearchFilter, dwAdditionalFlags);
-        POST_REALCALL
-      }
+      POST_REALCALL
     }
   }
 
@@ -2118,7 +2103,7 @@ HANDLE WINAPI usvfs::hook_FindFirstFileExW(LPCWSTR lpFileName, FINDEX_INFO_LEVEL
       = lpFileName;
   }
 
-  LOG_CALL().PARAMWRAP(lpFileName).PARAMWRAP(tempPathStr.c_str());
+  //LOG_CALL().PARAMWRAP(lpFileName).PARAMWRAP(tempPathStr.c_str());
   LOG_CALL().PARAMWRAP(lpFileName).PARAMWRAP(originalPath.c_str()).PARAM(res).PARAM(callContext.lastError());
   if (usedRewrite)
     LOG_CALL().PARAMWRAP(lpFileName).PARAMWRAP(finalPath.c_str()).PARAM(res).PARAM(callContext.lastError());
