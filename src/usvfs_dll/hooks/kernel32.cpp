@@ -296,20 +296,17 @@ public:
 
     // We need to track deleted files even if they were not rerouted (i.e. files deleted from the real folder which there is
     // a virtualized mapped folder on top of it). Since we don't want to add, *every* file which is deleted we check this:
-    if (!directory) {
-      bool found = wasRerouted();
-      if (!found)
-      {
-        FindCreateTarget visitor;
-        usvfs::RedirectionTree::VisitorFunction visitorWrapper =
-          [&](const usvfs::RedirectionTree::NodePtrT &node) { visitor(node); };
-        readContext->redirectionTable()->visitPath(m_RealPath, visitorWrapper);
-        if (visitor.target.get())
-          found = true;
-      }
-      if (found)
-        addToDelete = true;
+    bool found = wasRerouted();
+    if (!found) {
+      FindCreateTarget visitor;
+      usvfs::RedirectionTree::VisitorFunction visitorWrapper =
+        [&](const usvfs::RedirectionTree::NodePtrT &node) { visitor(node); };
+      readContext->redirectionTable()->visitPath(m_RealPath, visitorWrapper);
+      if (visitor.target.get())
+        found = true;
     }
+    if (found)
+      addToDelete = true;
 
     if (wasRerouted()) {
       if (m_FileNode.get())
@@ -1284,7 +1281,7 @@ DWORD WINAPI usvfs::hook_GetFileAttributesW(LPCWSTR lpFileName)
 }
 
 DWORD WINAPI usvfs::hook_SetFileAttributesW(
-	LPCWSTR lpFileName, DWORD dwFileAttributes)
+  LPCWSTR lpFileName, DWORD dwFileAttributes)
 {
   DWORD res = 0UL;
 
@@ -1627,34 +1624,34 @@ BOOL WINAPI usvfs::hook_MoveFileWithProgressW(LPCWSTR lpExistingFileName, LPCWST
     bool movedDrives = rewriteChangedDrives(lpExistingFileName, lpNewFileName, readReroute, writeReroute);
     if (movedDrives) newFlags |= MOVEFILE_COPY_ALLOWED;
 
-	bool isDirectory = pathIsDirectory(readReroute.fileName());
+  bool isDirectory = pathIsDirectory(readReroute.fileName());
 
   PRE_REALCALL
-	if (isDirectory && movedDrives) {
-		SHFILEOPSTRUCTW sf = { 0 };
-		sf.wFunc = FO_MOVE;
-		sf.hwnd = 0;
-		sf.fFlags = FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR | FOF_NOERRORUI;
-		sf.pFrom = readReroute.fileName();
-		sf.pTo = writeReroute.fileName();
-		int shRes = ::SHFileOperationW(&sf);
-		switch (shRes) {
-		case 0x78:
-			callContext.updateLastError(ERROR_ACCESS_DENIED);
-			break;
-		case 0x7C:
-			callContext.updateLastError(ERROR_FILE_NOT_FOUND);
-			break;
-		case 0x7E:
-		case 0x80:
-			callContext.updateLastError(ERROR_FILE_EXISTS);
-			break;
-		default:
-			callContext.updateLastError(shRes);
-		}
-		res = shRes == 0;
-	} else
-		res = ::MoveFileWithProgressW(readReroute.fileName(), writeReroute.fileName(), lpProgressRoutine, lpData, newFlags);
+  if (isDirectory && movedDrives) {
+    SHFILEOPSTRUCTW sf = { 0 };
+    sf.wFunc = FO_MOVE;
+    sf.hwnd = 0;
+    sf.fFlags = FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR | FOF_NOERRORUI;
+    sf.pFrom = readReroute.fileName();
+    sf.pTo = writeReroute.fileName();
+    int shRes = ::SHFileOperationW(&sf);
+    switch (shRes) {
+    case 0x78:
+      callContext.updateLastError(ERROR_ACCESS_DENIED);
+      break;
+    case 0x7C:
+      callContext.updateLastError(ERROR_FILE_NOT_FOUND);
+      break;
+    case 0x7E:
+    case 0x80:
+      callContext.updateLastError(ERROR_FILE_EXISTS);
+      break;
+    default:
+      callContext.updateLastError(shRes);
+    }
+    res = shRes == 0;
+  } else
+    res = ::MoveFileWithProgressW(readReroute.fileName(), writeReroute.fileName(), lpProgressRoutine, lpData, newFlags);
   POST_REALCALL
 
   if (res) SetLastError(ERROR_SUCCESS);
@@ -1889,31 +1886,31 @@ DLLEXPORT BOOL WINAPI usvfs::hook_CreateDirectoryW(
 }
 
 DLLEXPORT BOOL WINAPI usvfs::hook_RemoveDirectoryW(
-	LPCWSTR lpPathName)
+  LPCWSTR lpPathName)
 {
 
-	BOOL res = FALSE;
+  BOOL res = FALSE;
 
-	HOOK_START_GROUP(MutExHookGroup::DELETE_FILE)
+  HOOK_START_GROUP(MutExHookGroup::DELETE_FILE)
 
-	RerouteW reroute = RerouteW::create(READ_CONTEXT(), callContext, lpPathName);
+  RerouteW reroute = RerouteW::create(READ_CONTEXT(), callContext, lpPathName);
 
-	PRE_REALCALL
-	if (reroute.wasRerouted()) {
-		res = ::RemoveDirectoryW(reroute.fileName());
-	}
-	else {
-		res = ::RemoveDirectoryW(lpPathName);
-	}
-	POST_REALCALL
+  PRE_REALCALL
+  if (reroute.wasRerouted()) {
+    res = ::RemoveDirectoryW(reroute.fileName());
+  }
+  else {
+    res = ::RemoveDirectoryW(lpPathName);
+  }
+  POST_REALCALL
 
-    reroute.removeMapping(READ_CONTEXT(), true);
-    if (reroute.wasRerouted())
-      LOG_CALL().PARAMWRAP(lpPathName).PARAMWRAP(reroute.fileName()).PARAM(res).PARAM(callContext.lastError());
+  reroute.removeMapping(READ_CONTEXT(), true);
+  if (reroute.wasRerouted())
+    LOG_CALL().PARAMWRAP(lpPathName).PARAMWRAP(reroute.fileName()).PARAM(res).PARAM(callContext.lastError());
 
-	HOOK_END
+  HOOK_END
 
-	return res;
+  return res;
 }
 
 DWORD WINAPI usvfs::hook_GetFullPathNameA(LPCSTR lpFileName, DWORD nBufferLength, LPSTR lpBuffer, LPSTR *lpFilePart)

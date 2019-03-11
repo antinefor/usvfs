@@ -462,7 +462,7 @@ bool usvfs_test_base::postmortem_check()
       recursive_compare_dirs(path(), m_o.fixture / source_gold, m_o.source, log);
 
     if (mount_check && source_check)
-      fprintf(log, "postmortem check successfull.\n");
+      fprintf(log, "postmortem check successful.\n");
     else {
       fprintf(log, "ERROR: postmortem check failed!\n");
       return false;
