@@ -226,6 +226,7 @@
     <ClInclude Include="..\src\usvfs_dll\hooks\kernel32.h" />
     <ClInclude Include="..\src\usvfs_dll\hooks\ntdll.h" />
     <ClInclude Include="..\src\usvfs_dll\hooks\sharedids.h" />
+    <ClInclude Include="..\src\usvfs_dll\maptracker.h" />
     <ClInclude Include="..\src\usvfs_dll\redirectiontree.h" />
     <ClInclude Include="..\src\usvfs_dll\semaphore.h" />
     <ClInclude Include="..\src\usvfs_dll\stringcast_boost.h" />

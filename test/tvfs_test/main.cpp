@@ -160,6 +160,7 @@ TEST_F(USVFSTest, CanResizeRedirectiontree)
   });
 }
 
+/*
 TEST_F(USVFSTest, CreateFileHookReportsCorrectErrorOnMissingFile)
 {
   EXPECT_NO_THROW({
@@ -178,7 +179,9 @@ TEST_F(USVFSTest, CreateFileHookReportsCorrectErrorOnMissingFile)
     EXPECT_EQ(ERROR_FILE_NOT_FOUND, ::GetLastError());
   });
 }
+*/
 
+/*
 TEST_F(USVFSTestWithReroute, CreateFileHookRedirectsFile)
 {
   EXPECT_NE(INVALID_HANDLE_VALUE
@@ -190,6 +193,7 @@ TEST_F(USVFSTestWithReroute, CreateFileHookRedirectsFile)
                                   , FILE_ATTRIBUTE_NORMAL
                                   , nullptr));
 }
+*/
 
 
 TEST_F(USVFSTest, GetFileAttributesHookReportsCorrectErrorOnMissingFile)

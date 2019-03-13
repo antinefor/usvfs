@@ -103,5 +103,8 @@
     <ClInclude Include="..\include\usvfs_version.h">
       <Filter>Header Files\include</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\usvfs_dll\maptracker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

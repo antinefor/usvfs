@@ -3,6 +3,7 @@
 #include <loghelpers.h>
 #include "../hookcontext.h"
 #include "../hookcallcontext.h"
+#include "../maptracker.h"
 #include "../stringcast_boost.h"
 #include <usvfs.h>
 #pragma warning(push, 3)
@@ -49,10 +50,20 @@ using usvfs::UnicodeString;
 #define FILE_OVERWRITE_IF 0x00000005
 #define FILE_MAXIMUM_DISPOSITION 0x00000005
 
-#define FILE_DELETE_ON_CLOSE 0x00001000
-
 template <typename T>
 using unique_ptr_deleter = std::unique_ptr<T, void (*)(T *)>;
+
+class RedirectionInfo {
+public:
+  UnicodeString path;
+  bool redirected;
+
+  RedirectionInfo() {}
+  RedirectionInfo(UnicodeString path, bool redirected)
+    : path(path)
+    , redirected(redirected)
+  {}
+};
 
 class HandleTracker {
 public:
@@ -150,19 +161,19 @@ std::ostream &operator<<(std::ostream &os, POBJECT_ATTRIBUTES attr)
   return operator<<(os, *attr->ObjectName);
 }
 
-std::pair<UnicodeString, bool>
+RedirectionInfo
 applyReroute(const usvfs::HookContext::ConstPtr &context,
              const usvfs::HookCallContext &callContext,
              const UnicodeString &inPath)
 {
-  std::pair<UnicodeString, bool> result;
-  result.first  = inPath;
-  result.second = false;
+  RedirectionInfo result;
+  result.path  = inPath;
+  result.redirected = false;
 
   if (callContext.active()) {
     // see if the file exists in the redirection tree
     std::string lookupPath = ush::string_cast<std::string>(
-        static_cast<LPCWSTR>(result.first) + 4, ush::CodePage::UTF8);
+        static_cast<LPCWSTR>(result.path) + 4, ush::CodePage::UTF8);
     auto node = context->redirectionTable()->findNode(lookupPath.c_str());
     // if so, replace the file name with the path to the mapped file
     if ((node.get() != nullptr) && (!node->data().linkTarget.empty() || node->isDirectory())) {
@@ -178,17 +189,38 @@ applyReroute(const usvfs::HookContext::ConstPtr &context,
         reroutePath = ush::string_cast<std::wstring>(
           node->path().c_str(),
           ush::CodePage::UTF8);
-      } 
+      }
       if ((*reroutePath.rbegin() == L'\\') && (*lookupPath.rbegin() != '\\')) {
         reroutePath.resize(reroutePath.size() - 1);
       }
       std::replace(reroutePath.begin(), reroutePath.end(), L'/', L'\\');
       if (reroutePath[1] == L'\\')
         reroutePath[1] = L'?';
-      result.first = LR"(\??\)" + reroutePath;
-      result.second = true;
+      result.path = LR"(\??\)" + reroutePath;
+      result.redirected = true;
     }
   }
+  return result;
+}
+
+RedirectionInfo
+applyReroute(const usvfs::CreateRerouter &rerouter)
+{
+  RedirectionInfo result;
+  result.path = rerouter.fileName();
+  result.redirected = rerouter.wasRerouted();
+
+  std::wstring reroutePath(static_cast<LPCWSTR>(result.path));
+  std::replace(reroutePath.begin(), reroutePath.end(), L'/', L'\\');
+  if (reroutePath[1] == L'\\')
+    reroutePath[1] = L'?';
+  if (!((reroutePath[0] == L'\\') &&
+        (reroutePath[1] == L'?') &&
+        (reroutePath[2] == L'?') &&
+        (reroutePath[3] == L'\\'))) {
+    result.path = LR"(\??\)" + reroutePath;
+  }
+
   return result;
 }
 
@@ -229,8 +261,7 @@ findCreateTarget(const usvfs::HookContext::ConstPtr &context,
   return result;
 }
 
-
-std::pair<UnicodeString, bool>
+RedirectionInfo
 applyReroute(const usvfs::HookContext::ConstPtr &context,
              const usvfs::HookCallContext &callContext,
              POBJECT_ATTRIBUTES inAttributes)
@@ -614,7 +645,7 @@ void gatherVirtualEntries(const UnicodeString &dirName,
           m = { ush::string_cast<std::wstring>(subNode->path().c_str(),
             ush::CodePage::UTF8), vName };
         }
-              
+
         info.virtualMatches.push(m);
         info.foundFiles.insert(ush::to_upper(vName));
       }
@@ -1014,15 +1045,15 @@ NTSTATUS WINAPI usvfs::hook_NtQueryDirectoryFileEx(
 }
 
 unique_ptr_deleter<OBJECT_ATTRIBUTES>
-makeObjectAttributes(std::pair<UnicodeString, bool> &redirInfo,
+makeObjectAttributes(RedirectionInfo &redirInfo,
                      POBJECT_ATTRIBUTES attributeTemplate)
 {
-  if (redirInfo.second) {
+  if (redirInfo.redirected) {
     unique_ptr_deleter<OBJECT_ATTRIBUTES> result(
         new OBJECT_ATTRIBUTES, [](OBJECT_ATTRIBUTES *ptr) { delete ptr; });
     memcpy(result.get(), attributeTemplate, sizeof(OBJECT_ATTRIBUTES));
     result->RootDirectory = nullptr;
-    result->ObjectName    = static_cast<PUNICODE_STRING>(redirInfo.first);
+    result->ObjectName    = static_cast<PUNICODE_STRING>(redirInfo.path);
     return result;
   } else {
     // just reuse the template with a dummy deleter
@@ -1044,10 +1075,6 @@ NTSTATUS ntdll_mess_NtOpenFile(PHANDLE FileHandle,
   NTSTATUS res = STATUS_NO_SUCH_FILE;
 
   HOOK_START_GROUP(MutExHookGroup::OPEN_FILE)
-
-  if (OpenOptions & FILE_DELETE_ON_CLOSE) {
-    spdlog::get("hooks")->warn("ntdll_mess_NtOpenFile: FILE_DELETE_ON_CLOSE not supported");
-  }
 
   bool storePath = false;
   if (((OpenOptions & FILE_DIRECTORY_FILE) != 0UL)
@@ -1079,7 +1106,7 @@ NTSTATUS ntdll_mess_NtOpenFile(PHANDLE FileHandle,
   }
 
   try {
-    std::pair<UnicodeString, bool> redir
+    RedirectionInfo redir
         = applyReroute(READ_CONTEXT(), callContext, fullName);
     unique_ptr_deleter<OBJECT_ATTRIBUTES> adjustedAttributes
         = makeObjectAttributes(redir, ObjectAttributes);
@@ -1096,7 +1123,7 @@ NTSTATUS ntdll_mess_NtOpenFile(PHANDLE FileHandle,
 #pragma message("need to clean up this handle in CloseHandle call")
     }
 
-    if (redir.second) {
+    if (redir.redirected) {
       LOG_CALL()
           .addParam("source", ObjectAttributes)
           .addParam("rerouted", adjustedAttributes.get())
@@ -1127,17 +1154,6 @@ NTSTATUS WINAPI usvfs::hook_NtOpenFile(PHANDLE FileHandle,
   return res;
 }
 
-bool fileExists(POBJECT_ATTRIBUTES attributes)
-{
-  UnicodeString temp = CreateUnicodeString(attributes);
-  return RtlDoesFileExists_U(static_cast<PCWSTR>(temp)) == TRUE;
-}
-
-bool fileExists(const UnicodeString &filename)
-{
-  return RtlDoesFileExists_U(static_cast<PCWSTR>(filename)) == TRUE;
-}
-
 NTSTATUS ntdll_mess_NtCreateFile(
     PHANDLE FileHandle, ACCESS_MASK DesiredAccess,
     POBJECT_ATTRIBUTES ObjectAttributes, PIO_STATUS_BLOCK IoStatusBlock,
@@ -1147,9 +1163,10 @@ NTSTATUS ntdll_mess_NtCreateFile(
 {
   using namespace usvfs;
 
+  NTSTATUS res = STATUS_NO_SUCH_FILE;
+
   PreserveGetLastError ntFunctionsDoNotChangeGetLastError;
 
-  NTSTATUS res = STATUS_NO_SUCH_FILE;
   HOOK_START_GROUP(MutExHookGroup::OPEN_FILE)
   if (!callContext.active()) {
     return ::NtCreateFile(FileHandle, DesiredAccess, ObjectAttributes,
@@ -1158,11 +1175,8 @@ NTSTATUS ntdll_mess_NtCreateFile(
                           EaBuffer, EaLength);
   }
 
-  if (CreateOptions & FILE_DELETE_ON_CLOSE) {
-    spdlog::get("hooks")->warn("ntdll_mess_NtCreateFile: FILE_DELETE_ON_CLOSE not supported");
-  }
-
   UnicodeString inPath = CreateUnicodeString(ObjectAttributes);
+  LPCWSTR inPathW = static_cast<LPCWSTR>(inPath);
 
   if (inPath.size() == 0) {
     spdlog::get("hooks")->info(
@@ -1174,58 +1188,80 @@ NTSTATUS ntdll_mess_NtCreateFile(
                           EaBuffer, EaLength);
   }
 
-  std::pair<UnicodeString, bool> redir(UnicodeString(), false);
-
-  { // limit context scope
-    FunctionGroupLock lock(MutExHookGroup::ALL_GROUPS);
-    HookContext::ConstPtr context = READ_CONTEXT();
-
-    redir = applyReroute(context, callContext, inPath);
-
-    // TODO would be neat if this could (optionally) reroute all potential write
-    // accesses to the create target.
-    //   This could be achived by copying the file to the target here in case
-    //   the createdisposition or the requested access rights make that
-    //   necessary
-    if (((CreateDisposition == FILE_SUPERSEDE)
-         || (CreateDisposition == FILE_CREATE)
-         || (CreateDisposition == FILE_OPEN_IF)
-         || (CreateDisposition == FILE_OVERWRITE_IF))
-        && !redir.second && !fileExists(inPath)) {
-      // the file will be created so now we need to know where
-      std::pair<UnicodeString, UnicodeString> createTarget
-          = findCreateTarget(context, inPath);
-
-      if (createTarget.second.size() != 0) {
-        // there is a reroute target for new files so adjust the path
-        redir.first = LR"(\??)"; // appendPath will add the second '\'
-        redir.first.appendPath(static_cast<PUNICODE_STRING>(createTarget.second));
-
-        spdlog::get("hooks")->info(
-            "reroute write access: {}",
-            ush::string_cast<std::string>(static_cast<LPCWSTR>(redir.first))
-                .c_str());
-      }
-    }
+  DWORD convertedDisposition = OPEN_EXISTING;
+  switch(CreateDisposition) {
+    case FILE_SUPERSEDE: convertedDisposition = CREATE_ALWAYS; break;
+    case FILE_OPEN: convertedDisposition = OPEN_EXISTING; break;
+    case FILE_CREATE: convertedDisposition = CREATE_NEW; break;
+    case FILE_OPEN_IF: convertedDisposition = OPEN_ALWAYS; break;
+    case FILE_OVERWRITE: convertedDisposition = TRUNCATE_EXISTING; break;
+    case FILE_OVERWRITE_IF: convertedDisposition = CREATE_ALWAYS; break;
+    default: spdlog::get("hooks")->error("invalid disposition: {0}", CreateDisposition); break;
   }
 
-  unique_ptr_deleter<OBJECT_ATTRIBUTES> adjustedAttributes
+  DWORD convertedAccess = 0;
+  if ((DesiredAccess & FILE_GENERIC_READ) == FILE_GENERIC_READ) convertedAccess |= GENERIC_READ;
+  if ((DesiredAccess & FILE_GENERIC_WRITE) == FILE_GENERIC_WRITE) convertedAccess |= GENERIC_WRITE;
+  if ((DesiredAccess & FILE_GENERIC_EXECUTE) == FILE_GENERIC_EXECUTE) convertedAccess |= GENERIC_EXECUTE;
+  if ((DesiredAccess & FILE_ALL_ACCESS) == FILE_ALL_ACCESS) convertedAccess |= GENERIC_ALL;
+
+  ULONG originalDisposition = CreateDisposition;
+  CreateRerouter rerouter;
+  if (rerouter.rerouteCreate(READ_CONTEXT(), callContext, inPathW, convertedDisposition,
+                             convertedAccess, (LPSECURITY_ATTRIBUTES)ObjectAttributes->SecurityDescriptor)) {
+    switch(convertedDisposition) {
+      case CREATE_NEW: CreateDisposition = FILE_CREATE; break;
+      case CREATE_ALWAYS: if (CreateDisposition != FILE_SUPERSEDE) CreateDisposition = FILE_OVERWRITE_IF; break;
+      case OPEN_EXISTING: CreateDisposition = FILE_OPEN; break;
+      case OPEN_ALWAYS: CreateDisposition = FILE_OPEN_IF; break;
+      case TRUNCATE_EXISTING: CreateDisposition = FILE_OVERWRITE; break;
+    }
+
+    RedirectionInfo redir = applyReroute(rerouter);
+
+    unique_ptr_deleter<OBJECT_ATTRIBUTES> adjustedAttributes
       = makeObjectAttributes(redir, ObjectAttributes);
 
-  PRE_REALCALL
-  res = ::NtCreateFile(FileHandle, DesiredAccess, adjustedAttributes.get(),
-                       IoStatusBlock, AllocationSize, FileAttributes,
-                       ShareAccess, CreateDisposition, CreateOptions, EaBuffer,
-                       EaLength);
-  POST_REALCALL
+    PRE_REALCALL
+      res = ::NtCreateFile(FileHandle, DesiredAccess, adjustedAttributes.get(),
+        IoStatusBlock, AllocationSize, FileAttributes,
+        ShareAccess, CreateDisposition, CreateOptions, EaBuffer,
+        EaLength);
+    POST_REALCALL
+    rerouter.updateResult(callContext, res == STATUS_SUCCESS);
 
-  if (redir.second) {
-    LOG_CALL()
-        .addParam("source", ObjectAttributes)
-        .addParam("rerouted", adjustedAttributes.get())
-        .PARAM(CreateDisposition)
-        .PARAM(*FileHandle)
-        .PARAMWRAP(res);
+    if (res == STATUS_SUCCESS) {
+      if (rerouter.newReroute())
+        rerouter.insertMapping(WRITE_CONTEXT());
+
+      if (rerouter.isDir() && rerouter.wasRerouted() && ((FileAttributes & FILE_OPEN_FOR_BACKUP_INTENT) == FILE_OPEN_FOR_BACKUP_INTENT)) {
+        // store the original search path for use during iteration
+        WRITE_CONTEXT()
+          ->customData<SearchHandleMap>(SearchHandles)[*FileHandle] = inPathW;
+      }
+    }
+
+    if (rerouter.wasRerouted() || rerouter.changedError() || originalDisposition != CreateDisposition) {
+      LOG_CALL()
+        .PARAMWRAP(inPathW)
+        .PARAMWRAP(rerouter.fileName())
+        .PARAMHEX(DesiredAccess)
+        .PARAMHEX(originalDisposition)
+        .PARAMHEX(CreateDisposition)
+        .PARAMHEX(FileAttributes)
+        .PARAMHEX(res)
+        .PARAMHEX(*FileHandle)
+        .PARAM(rerouter.originalError())
+        .PARAM(rerouter.error());
+    }
+  } else {
+    // make the original call to set up the proper errors and return statuses
+    PRE_REALCALL
+      res = ::NtCreateFile(FileHandle, DesiredAccess, ObjectAttributes,
+        IoStatusBlock, AllocationSize, FileAttributes,
+        ShareAccess, CreateDisposition, CreateOptions, EaBuffer,
+        EaLength);
+    POST_REALCALL
   }
 
   HOOK_END
@@ -1245,7 +1281,6 @@ NTSTATUS WINAPI usvfs::hook_NtCreateFile(
     ntdllHandleTracker.insert(*FileHandle, CreateUnicodeString(ObjectAttributes));
   return res;
 }
-
 
 NTSTATUS WINAPI usvfs::hook_NtClose(HANDLE Handle)
 {
@@ -1308,7 +1343,7 @@ NTSTATUS WINAPI usvfs::hook_NtQueryAttributesFile(
 
   UnicodeString inPath = CreateUnicodeString(ObjectAttributes);
 
-  std::pair<UnicodeString, bool> redir
+  RedirectionInfo redir
       = applyReroute(READ_CONTEXT(), callContext, inPath);
   unique_ptr_deleter<OBJECT_ATTRIBUTES> adjustedAttributes
       = makeObjectAttributes(redir, ObjectAttributes);
@@ -1317,7 +1352,7 @@ NTSTATUS WINAPI usvfs::hook_NtQueryAttributesFile(
   res = ::NtQueryAttributesFile(adjustedAttributes.get(), FileInformation);
   POST_REALCALL
 
-  if (redir.second) {
+  if (redir.redirected) {
     LOG_CALL()
         .addParam("source", ObjectAttributes)
         .addParam("rerouted", adjustedAttributes.get())
@@ -1350,7 +1385,7 @@ NTSTATUS WINAPI usvfs::hook_NtQueryFullAttributesFile(
     return ::NtQueryFullAttributesFile(ObjectAttributes, FileInformation);
   }
 
-  std::pair<UnicodeString, bool> redir
+  RedirectionInfo redir
       = applyReroute(READ_CONTEXT(), callContext, inPath);
   unique_ptr_deleter<OBJECT_ATTRIBUTES> adjustedAttributes
       = makeObjectAttributes(redir, ObjectAttributes);
@@ -1359,7 +1394,7 @@ NTSTATUS WINAPI usvfs::hook_NtQueryFullAttributesFile(
   res = ::NtQueryFullAttributesFile(adjustedAttributes.get(), FileInformation);
   POST_REALCALL
 
-  if (redir.second) {
+  if (redir.redirected) {
     LOG_CALL()
         .addParam("source", ObjectAttributes)
         .addParam("rerouted", adjustedAttributes.get())

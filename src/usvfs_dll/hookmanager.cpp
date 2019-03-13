@@ -231,13 +231,6 @@ void HookManager::initHooks()
   installHook(kbaseMod, k32Mod, "GetFileAttributesW", hook_GetFileAttributesW);
   installHook(kbaseMod, k32Mod, "SetFileAttributesW", hook_SetFileAttributesW);
 
-  // Unfortunately, at least on windows 10 1709 x64 the CreateFileA and CreateFile2 translate
-  // to CreateFileInternal directly (so hooking CreateFileW alone is not enough)
-  installHook(kbaseMod, k32Mod, "CreateFileW", hook_CreateFileW);
-  installHook(kbaseMod, k32Mod, "CreateFileA", hook_CreateFileA);
-  if (IsWindows8OrGreater())
-    installHook(kbaseMod, k32Mod, "CreateFile2", hook_CreateFile2, reinterpret_cast<LPVOID*>(&CreateFile2));
-
   installHook(kbaseMod, k32Mod, "CreateDirectoryW", hook_CreateDirectoryW);
   installHook(kbaseMod, k32Mod, "RemoveDirectoryW", hook_RemoveDirectoryW);
   installHook(kbaseMod, k32Mod, "DeleteFileW", hook_DeleteFileW);

@@ -18,6 +18,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
+#pragma once
+
 #include <string>
 #include <limits>
 #include <boost/type_traits.hpp>
