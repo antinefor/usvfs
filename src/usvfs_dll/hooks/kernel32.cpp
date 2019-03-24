@@ -1129,7 +1129,7 @@ DWORD WINAPI usvfs::hook_GetFullPathNameA(LPCSTR lpFileName, DWORD nBufferLength
   std::string resolvedWithCMD;
 
   std::wstring actualCWD;
-  fs::path filePath = lpFileName;
+  fs::path filePath = ush::string_cast<std::wstring>(lpFileName, CodePage::UTF8);
   if (k32CurrentDirectoryTracker.get(actualCWD, filePath.wstring().c_str())) {
     if (!filePath.is_absolute())
       resolvedWithCMD =
