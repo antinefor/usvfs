@@ -176,15 +176,13 @@ void spdlog::sinks::shm_sink::output(level::level_enum lev,
   switch (lev) {
     case level::trace:
     case level::debug:
-    case level::notice: {
+    case level::info: {
       // m_LogQueue.send(message.c_str(), count, 0);
       sent = m_LogQueue.try_send(message.c_str(),
                                  static_cast<unsigned int>(count), 0);
     } break;
-    case level::alert:
-    case level::critical:
-    case level::emerg:
-    case level::err: {
+    case level::err:
+    case level::critical: {
       m_LogQueue.send(message.c_str(), static_cast<unsigned int>(count), 0);
     } break;
     default: {
