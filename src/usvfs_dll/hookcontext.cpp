@@ -33,6 +33,7 @@ using usvfs::shared::SharedMemoryT;
 using usvfs::shared::VoidAllocatorT;
 
 using namespace usvfs;
+namespace ush = usvfs::shared;
 
 HookContext *HookContext::s_Instance = nullptr;
 
@@ -214,15 +215,59 @@ void HookContext::clearExecutableBlacklist()
   m_Parameters->processBlacklist.clear();
 }
 
-BOOL HookContext::executableBlacklisted(const std::wstring &executableName) const
+BOOL HookContext::executableBlacklisted(LPCWSTR lpApplicationName, LPCWSTR lpCommandLine) const
 {
-  for (shared::StringT exec : m_Parameters->processBlacklist) {
-    if (boost::algorithm::iends_with(executableName,
-            "\\" + std::string(exec.data(), exec.size()))) {
-      return TRUE;
+  BOOL blacklisted = FALSE;
+
+  if (lpApplicationName) {
+    std::string appName = ush::string_cast<std::string>(lpApplicationName, ush::CodePage::UTF8);
+    for (shared::StringT item : m_Parameters->processBlacklist) {
+      if (boost::algorithm::iends_with(appName, std::string(item.data(), item.size()))) {
+        spdlog::get("usvfs")->info("application {} is blacklisted", appName);
+        blacklisted = TRUE;
+        break;
+      }
     }
   }
-  return FALSE;
+
+  if (lpCommandLine) {
+    std::string cmdLine = ush::string_cast<std::string>(lpCommandLine, ush::CodePage::UTF8);
+    for (shared::StringT item : m_Parameters->processBlacklist) {
+      if (boost::algorithm::icontains(cmdLine, std::string(item.data(), item.size()))) {
+        spdlog::get("usvfs")->info("command line {} is blacklisted", cmdLine);
+        blacklisted = TRUE;
+        break;
+      }
+    }
+  }
+
+  return blacklisted;
+}
+
+void HookContext::forceLoadLibrary(const std::wstring &processName, const std::wstring &libraryPath)
+{
+  m_Parameters->forcedLibraries.push_front(ForcedLibrary(
+    shared::string_cast<std::string>(processName, shared::CodePage::UTF8).c_str(),
+    shared::string_cast<std::string>(libraryPath, shared::CodePage::UTF8).c_str(),
+    m_Parameters->forcedLibraries.get_allocator()));
+}
+
+void HookContext::clearLibraryForceLoads()
+{
+  m_Parameters->forcedLibraries.clear();
+}
+
+std::vector<std::wstring> HookContext::librariesToForceLoad(const std::wstring &processName)
+{
+  std::vector<std::wstring> results;
+  for (auto library : m_Parameters->forcedLibraries) {
+    std::string processNameString = shared::string_cast<std::string>(processName, shared::CodePage::UTF8);
+    if (stricmp(processNameString.c_str(), library.processName.c_str()) == 0) {
+      std::wstring libraryPathString = shared::string_cast<std::wstring>(library.libraryPath.c_str(), shared::CodePage::UTF8);
+      results.push_back(libraryPathString);
+    }
+  }
+  return results;
 }
 
 void HookContext::unregisterCurrentProcess()

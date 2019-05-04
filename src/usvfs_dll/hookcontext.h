@@ -33,6 +33,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/thread/shared_lock_guard.hpp>
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/containers/flat_set.hpp>
+#include <boost/interprocess/containers/slist.hpp>
 #include <memory>
 #include <set>
 #include <future>
@@ -54,6 +55,20 @@ void USVFSInitParametersInt(USVFSParameters *parameters,
 typedef shared::VoidAllocatorT::rebind<DWORD>::other DWORDAllocatorT;
 typedef shared::VoidAllocatorT::rebind<shared::StringT>::other StringAllocatorT;
 
+struct ForcedLibrary {
+  ForcedLibrary(const char *processName, const char *libraryPath,
+                const shared::VoidAllocatorT &allocator)
+    : processName(processName, allocator)
+    , libraryPath(libraryPath, allocator)
+  {
+  }
+
+  shared::StringT processName;
+  shared::StringT libraryPath;
+};
+
+typedef shared::VoidAllocatorT::rebind<ForcedLibrary>::other ForcedLibraryAllocatorT;
+
 struct SharedParameters {
 
   SharedParameters() = delete;
@@ -74,6 +89,7 @@ struct SharedParameters {
     , userCount(1)
     , processBlacklist(allocator)
     , processList(allocator)
+    , forcedLibraries(allocator)
   {
   }
 
@@ -90,6 +106,7 @@ struct SharedParameters {
   boost::container::flat_set<shared::StringT, std::less<shared::StringT>,
                              StringAllocatorT> processBlacklist;
   boost::container::flat_set<DWORD, std::less<DWORD>, DWORDAllocatorT> processList;
+  boost::container::slist<ForcedLibrary, ForcedLibraryAllocatorT> forcedLibraries;
 };
 
 
@@ -200,7 +217,11 @@ public:
 
   void blacklistExecutable(const std::wstring &executableName);
   void clearExecutableBlacklist();
-  BOOL executableBlacklisted(const std::wstring &executableName) const;
+  BOOL HookContext::executableBlacklisted(LPCWSTR lpApplicationName, LPCWSTR lpCommandLine) const;
+
+  void forceLoadLibrary(const std::wstring &processName, const std::wstring &libraryPath);
+  void clearLibraryForceLoads();
+  std::vector<std::wstring> librariesToForceLoad(const std::wstring &processName);
 
   void setLogLevel(LogLevel level);
   void setCrashDumpsType(CrashDumpsType type);

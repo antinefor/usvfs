@@ -145,6 +145,17 @@ DLLEXPORT VOID WINAPI BlacklistExecutable(LPWSTR executableName);
 DLLEXPORT VOID WINAPI ClearExecutableBlacklist();
 
 /**
+ * adds a library to be force loaded when the given process is injected
+ * @param
+ */
+DLLEXPORT VOID WINAPI ForceLoadLibrary(LPWSTR processName, LPWSTR libraryPath);
+
+/**
+ * clears all previous calls to ForceLoadLibrary
+ */
+DLLEXPORT VOID WINAPI ClearLibraryForceLoads();
+
+/**
  * print debugging info about the vfs. The format is currently not fixed and may
  * change between usvfs versions
  */
