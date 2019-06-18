@@ -1299,6 +1299,10 @@ NTSTATUS WINAPI usvfs::hook_NtClose(HANDLE Handle)
 //      std::lock_guard<std::recursive_mutex> lock(activeSearches.queryMutex);
       auto iter = activeSearches.info.find(Handle);
       if (iter != activeSearches.info.end()) {
+        if (iter->second.currentSearchHandle != INVALID_HANDLE_VALUE) {
+          ::CloseHandle(iter->second.currentSearchHandle);
+        }
+
         activeSearches.info.erase(iter);
         log = true;
       }
