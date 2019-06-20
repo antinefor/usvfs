@@ -449,7 +449,9 @@ public:
     if (auto par = parent()) {
       spdlog::get("usvfs")->info("remove from tree {}", m_Name.c_str());
       auto self = par->m_Nodes.find(m_Name.c_str());
-      par->erase(self);
+      if (self != par->m_Nodes.end()) {
+        par->erase(self);
+      }
     }
   }
 
