@@ -139,6 +139,7 @@ HMODULE WINAPI usvfs::hook_LoadLibraryExW(LPCWSTR lpFileName, HANDLE hFile,
   HMODULE res = nullptr;
 
   HOOK_START_GROUP(MutExHookGroup::LOAD_LIBRARY)
+  // Why is the usual if (!callContext.active()... check missing?
 
   RerouteW reroute = RerouteW::create(READ_CONTEXT(), callContext, lpFileName);
   PRE_REALCALL
@@ -488,6 +489,7 @@ DWORD WINAPI usvfs::hook_SetFileAttributesW(
   DWORD res = 0UL;
 
   HOOK_START_GROUP(MutExHookGroup::FILE_ATTRIBUTES)
+  // Why is the usual if (!callContext.active()... check missing?
 
   RerouteW reroute = RerouteW::create(READ_CONTEXT(), callContext, lpFileName);
   PRE_REALCALL
@@ -508,6 +510,7 @@ BOOL WINAPI usvfs::hook_DeleteFileW(LPCWSTR lpFileName)
   BOOL res = FALSE;
 
   HOOK_START_GROUP(MutExHookGroup::DELETE_FILE)
+  // Why is the usual if (!callContext.active()... check missing?
 
   RerouteW reroute = RerouteW::create(READ_CONTEXT(), callContext, lpFileName);
 
@@ -800,6 +803,9 @@ BOOL WINAPI usvfs::hook_MoveFileWithProgressA(LPCSTR lpExistingFileName, LPCSTR 
 
 BOOL WINAPI usvfs::hook_MoveFileWithProgressW(LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, LPPROGRESS_ROUTINE lpProgressRoutine, LPVOID lpData, DWORD dwFlags)
 {
+
+  //TODO: Remove all redundant hooks to moveFile alternatives.
+  //it would appear that all other moveFile functions end up calling this one with no additional code.
   BOOL res = FALSE;
 
   HOOK_START_GROUP(MutExHookGroup::SHELL_FILEOP)
@@ -861,7 +867,9 @@ BOOL WINAPI usvfs::hook_MoveFileWithProgressW(LPCWSTR lpExistingFileName, LPCWST
   writeReroute.updateResult(callContext, res);
 
   if (res) {
-    readReroute.removeMapping(READ_CONTEXT(), isDirectory); // Updating the rerouteCreate to check deleted file entries should make this okay
+    //TODO: this call causes the node to be removed twice in case of MOVEFILE_COPY_ALLOWED as the deleteFile hook lower level already takes care of it,
+    //but deleteFile can't be disabled since we are relying on it in case of MOVEFILE_REPLACE_EXISTING for the destination file. 
+    readReroute.removeMapping(READ_CONTEXT(), isDirectory); // Updating the rerouteCreate to check deleted file entries should make this okay (not related to comments above)
 
     if (writeReroute.newReroute()) {
       if (isDirectory)
@@ -1094,6 +1102,7 @@ DLLEXPORT BOOL WINAPI usvfs::hook_RemoveDirectoryW(
   BOOL res = FALSE;
 
   HOOK_START_GROUP(MutExHookGroup::DELETE_FILE)
+  // Why is the usual if (!callContext.active()... check missing?
 
   RerouteW reroute = RerouteW::create(READ_CONTEXT(), callContext, lpPathName);
 

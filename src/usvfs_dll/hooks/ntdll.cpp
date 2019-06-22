@@ -1075,6 +1075,7 @@ NTSTATUS ntdll_mess_NtOpenFile(PHANDLE FileHandle,
   NTSTATUS res = STATUS_NO_SUCH_FILE;
 
   HOOK_START_GROUP(MutExHookGroup::OPEN_FILE)
+  // Why is the usual if (!callContext.active()... check missing?
 
   bool storePath = false;
   if (((OpenOptions & FILE_DIRECTORY_FILE) != 0UL)
@@ -1344,6 +1345,7 @@ NTSTATUS WINAPI usvfs::hook_NtQueryAttributesFile(
   NTSTATUS res = STATUS_SUCCESS;
 
   HOOK_START_GROUP(MutExHookGroup::FILE_ATTRIBUTES)
+  // Why is the usual if (!callContext.active()... check missing?
 
   UnicodeString inPath = CreateUnicodeString(ObjectAttributes);
 
