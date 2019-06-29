@@ -449,7 +449,14 @@ public:
     if (auto par = parent()) {
       spdlog::get("usvfs")->info("remove from tree {}", m_Name.c_str());
       auto self = par->m_Nodes.find(m_Name.c_str());
-      par->erase(self);
+      if (self != par->m_Nodes.end()) {
+        par->erase(self);
+      }
+      else {
+        //trying to remove a node that des not exist, most likely because it was already removed in a lower level call. 
+        //this is known to happen when MoveFile has the MOVEFILE_COPY_ALLOWED flag and moving a mapped file.
+        spdlog::get("usvfs")->warn("Failed to remove inexisting node from tree: {}", m_Name.c_str());
+      }
     }
   }
 
