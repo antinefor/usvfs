@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
       exceptionDialog(__LINE__, 2, e.what(), e2.what());
       // no way to log this
     } catch (const std::exception &) {
-      logger->critical() << e.what();
+      logger->critical(e.what());
     }
     return 1;
   }
@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
       // no way to log this
       exceptionDialog(__LINE__, 2, e.what(), e2.what());
     } catch (const std::exception &) {
-      logger->critical() << e.what();
+      logger->critical(e.what());
     }
   }
 }
