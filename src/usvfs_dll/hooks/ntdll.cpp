@@ -1320,12 +1320,12 @@ NTSTATUS WINAPI usvfs::hook_NtClose(HANDLE Handle)
     }
   }
 
+  if (GetFileType(Handle) == FILE_TYPE_DISK)
+    ntdllHandleTracker.erase(Handle);
+
   PRE_REALCALL
   res = ::NtClose(Handle);
   POST_REALCALL
-
-  if (GetFileType(Handle) == FILE_TYPE_DISK)
-    ntdllHandleTracker.erase(Handle);
 
   if (log) {
     LOG_CALL().PARAM(Handle).PARAMWRAP(res);
