@@ -176,7 +176,8 @@ DLLEXPORT void WINAPI USVFSInitParameters(USVFSParameters *parameters,
                                           bool debugMode,
                                           LogLevel logLevel,
                                           CrashDumpsType crashDumpsType,
-                                          const char *crashDumpsPath);
+                                          const char *crashDumpsPath,
+                                          std::chrono::milliseconds delayProcess={});
 
 DLLEXPORT int WINAPI CreateMiniDump(PEXCEPTION_POINTERS exceptionPtrs, CrashDumpsType type, const wchar_t* dumpPath);
 

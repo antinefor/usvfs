@@ -22,6 +22,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 
 #include "logging.h"
 #include "dllimport.h"
+#include <chrono>
 
 enum class CrashDumpsType : uint8_t {
   None,
@@ -40,6 +41,7 @@ struct USVFSParameters {
   LogLevel logLevel{LogLevel::Debug};
   CrashDumpsType crashDumpsType{CrashDumpsType::None};
   char crashDumpsPath[260];
+  std::chrono::milliseconds delayProcess{0};
 };
 
 }
