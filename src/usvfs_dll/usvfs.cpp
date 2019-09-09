@@ -327,6 +327,10 @@ void __cdecl InitHooks(LPVOID parameters, size_t)
   usvfs_dump_type = params->crashDumpsType;
   usvfs_dump_path = ush::string_cast<std::wstring>(params->crashDumpsPath, ush::CodePage::UTF8);
 
+  if (params->delayProcess.count() > 0) {
+    ::Sleep(static_cast<unsigned long>(params->delayProcess.count()));
+  }
+
   SetLogLevel(params->logLevel);
 
   if (exceptionHandler == nullptr) {
@@ -775,11 +779,14 @@ void WINAPI USVFSInitParameters(USVFSParameters *parameters,
                                 const char *instanceName, bool debugMode,
                                 LogLevel logLevel,
                                 CrashDumpsType crashDumpsType,
-                                const char *crashDumpsPath)
+                                const char *crashDumpsPath,
+                                std::chrono::milliseconds delayProcess)
 {
   parameters->debugMode = debugMode;
   parameters->logLevel = logLevel;
   parameters->crashDumpsType = crashDumpsType;
+  parameters->delayProcess = delayProcess;
+
   strncpy_s(parameters->instanceName, instanceName, _TRUNCATE);
   if (crashDumpsPath && *crashDumpsPath && strlen(crashDumpsPath) < _countof(parameters->crashDumpsPath)) {
     memcpy(parameters->crashDumpsPath, crashDumpsPath, strlen(crashDumpsPath)+1);
