@@ -512,13 +512,15 @@ BOOL WINAPI usvfs::hook_DeleteFileW(LPCWSTR lpFileName)
   HOOK_START_GROUP(MutExHookGroup::DELETE_FILE)
   // Why is the usual if (!callContext.active()... check missing?
 
-  RerouteW reroute = RerouteW::create(READ_CONTEXT(), callContext, lpFileName);
+  const std::wstring path = RerouteW::canonizePath(RerouteW::absolutePath(lpFileName)).wstring();
+
+  RerouteW reroute = RerouteW::create(READ_CONTEXT(), callContext, path.c_str());
 
   PRE_REALCALL
   if (reroute.wasRerouted()) {
     res = ::DeleteFileW(reroute.fileName());
   } else {
-    res = ::DeleteFileW(lpFileName);
+    res = ::DeleteFileW(path.c_str());
   }
   POST_REALCALL
 
@@ -868,7 +870,7 @@ BOOL WINAPI usvfs::hook_MoveFileWithProgressW(LPCWSTR lpExistingFileName, LPCWST
 
   if (res) {
     //TODO: this call causes the node to be removed twice in case of MOVEFILE_COPY_ALLOWED as the deleteFile hook lower level already takes care of it,
-    //but deleteFile can't be disabled since we are relying on it in case of MOVEFILE_REPLACE_EXISTING for the destination file. 
+    //but deleteFile can't be disabled since we are relying on it in case of MOVEFILE_REPLACE_EXISTING for the destination file.
     readReroute.removeMapping(READ_CONTEXT(), isDirectory); // Updating the rerouteCreate to check deleted file entries should make this okay (not related to comments above)
 
     if (writeReroute.newReroute()) {
