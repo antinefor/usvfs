@@ -69,7 +69,7 @@ namespace test {
     FILE* m_f;
   };
 
-  using std::experimental::filesystem::path;
+  using std::filesystem::path;
 
   // path functions assume they are called by a test executable
   // (calculate the requested path relative to the current executable path)

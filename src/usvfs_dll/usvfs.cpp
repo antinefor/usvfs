@@ -357,7 +357,7 @@ void __cdecl InitHooks(LPVOID parameters, size_t)
     auto exePath = boost::dll::program_location();
     auto libraries = context->librariesToForceLoad(exePath.filename().c_str());
     for (auto library : libraries) {
-      if (std::experimental::filesystem::exists(library)) {
+      if (std::filesystem::exists(library)) {
         const auto ret = LoadLibraryExW(library.c_str(), NULL, 0);
         if (ret) {
           spdlog::get("usvfs")
