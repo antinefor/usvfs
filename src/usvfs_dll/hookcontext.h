@@ -49,7 +49,8 @@ void USVFSInitParametersInt(USVFSParameters *parameters,
                             bool debugMode,
                             LogLevel logLevel,
                             CrashDumpsType crashDumpsType,
-                            const char *crashDumpsPath);
+                            const char *crashDumpsPath,
+                            std::chrono::milliseconds delayProcess);
 
 
 typedef shared::VoidAllocatorT::rebind<DWORD>::other DWORDAllocatorT;
@@ -86,6 +87,7 @@ struct SharedParameters {
     , logLevel(reference.logLevel)
     , crashDumpsType(reference.crashDumpsType)
     , crashDumpsPath(reference.crashDumpsPath, allocator)
+    , delayProcess(reference.delayProcess)
     , userCount(1)
     , processBlacklist(allocator)
     , processList(allocator)
@@ -102,6 +104,7 @@ struct SharedParameters {
   LogLevel logLevel;
   CrashDumpsType crashDumpsType;
   shared::StringT crashDumpsPath;
+  std::chrono::milliseconds delayProcess;
   uint32_t userCount;
   boost::container::flat_set<shared::StringT, std::less<shared::StringT>,
                              StringAllocatorT> processBlacklist;

@@ -63,7 +63,8 @@ USVFSParameters SharedParameters::makeLocal() const
                          currentSHMName.c_str(),
                          currentInverseSHMName.c_str(),
                          debugMode, logLevel, crashDumpsType,
-                         crashDumpsPath.c_str());
+                         crashDumpsPath.c_str(),
+                         delayProcess);
   return result;
 }
 
@@ -75,11 +76,13 @@ void usvfs::USVFSInitParametersInt(USVFSParameters *parameters,
                                    bool debugMode,
                                    LogLevel logLevel,
                                    CrashDumpsType crashDumpsType,
-                                   const char *crashDumpsPath)
+                                   const char *crashDumpsPath,
+                                   std::chrono::milliseconds delayProcess)
 {
   parameters->debugMode = debugMode;
   parameters->logLevel = logLevel;
   parameters->crashDumpsType = crashDumpsType;
+  parameters->delayProcess = delayProcess;
   strncpy_s(parameters->instanceName, instanceName, _TRUNCATE);
   strncpy_s(parameters->currentSHMName, currentSHMName, _TRUNCATE);
   strncpy_s(parameters->currentInverseSHMName, currentInverseSHMName, _TRUNCATE);
