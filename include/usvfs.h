@@ -80,13 +80,19 @@ DLLEXPORT BOOL WINAPI VirtualLinkDirectoryStatic(LPCWSTR source, LPCWSTR destina
  * connect to a virtual filesystem as a controller, without hooking the calling process. Please note that
  * you can only be connected to one vfs, so this will silently disconnect from a previous vfs.
  */
+[[deprecated("deprecated, use usvfsConnectVFS()")]]
 DLLEXPORT BOOL WINAPI ConnectVFS(const USVFSParameters *parameters);
+
+DLLEXPORT BOOL WINAPI usvfsConnectVFS(const usvfsParameters* p);
 
 /**
  * @brief create a new VFS. This is similar to ConnectVFS except it guarantees
  *   the vfs is reset before use.
  */
+[[deprecated("deprecated, use usvfsCreateVFS()")]]
 DLLEXPORT BOOL WINAPI CreateVFS(const USVFSParameters *parameters);
+
+DLLEXPORT BOOL WINAPI usvfsCreateVFS(const usvfsParameters* p);
 
 /**
  * disconnect from a virtual filesystem. This removes hooks if necessary
@@ -116,11 +122,6 @@ DLLEXPORT BOOL WINAPI CreateProcessHooked(
  * FIXME retrieves log messages from all instances, the logging queue is not separated
  */
 DLLEXPORT bool WINAPI GetLogMessages(LPSTR buffer, size_t size, bool blocking = false);
-
-/**
- * @brief Used to change parameters which can be changed in runtime
- */
-DLLEXPORT void WINAPI USVFSUpdateParams(LogLevel level, CrashDumpsType type);
 
 /**
  * retrieves a readable representation of the vfs tree
@@ -170,14 +171,24 @@ DLLEXPORT void WINAPI InitLogging(bool toLocal = false);
  */
 DLLEXPORT void __cdecl InitHooks(LPVOID userData, size_t userDataSize);
 
-
+[[deprecated("deprecated, use usvfsCreateParameters()")]]
 DLLEXPORT void WINAPI USVFSInitParameters(USVFSParameters *parameters,
                                           const char *instanceName,
                                           bool debugMode,
                                           LogLevel logLevel,
                                           CrashDumpsType crashDumpsType,
-                                          const char *crashDumpsPath,
-                                          std::chrono::milliseconds delayProcess={});
+                                          const char *crashDumpsPath);
+
+/**
+* @brief Used to change parameters which can be changed in runtime
+*/
+[[deprecated("deprecated, use usvfsUpdateParameters()")]]
+DLLEXPORT void WINAPI USVFSUpdateParams(LogLevel level, CrashDumpsType type);
+
+// the only information used from the parameters are the crash dump type, log
+// level and process delay
+//
+DLLEXPORT void WINAPI usvfsUpdateParameters(usvfsParameters* p);
 
 DLLEXPORT int WINAPI CreateMiniDump(PEXCEPTION_POINTERS exceptionPtrs, CrashDumpsType type, const wchar_t* dumpPath);
 
