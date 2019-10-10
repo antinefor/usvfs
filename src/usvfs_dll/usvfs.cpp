@@ -805,6 +805,11 @@ void WINAPI USVFSInitParameters(USVFSParameters *parameters,
 }
 
 
+const char* WINAPI USVFSVersionString()
+{
+  return USVFS_VERSION_STRING;
+}
+
 //
 // DllMain
 //
