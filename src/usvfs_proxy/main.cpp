@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
       return 1;
     }
 
-    USVFSParameters par = params.first->makeLocal();
+    usvfsParameters par = params.first->makeLocal();
 
     boost::filesystem::path p(winapi::wide::getModuleFileName(nullptr));
 

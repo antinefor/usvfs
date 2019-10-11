@@ -56,41 +56,19 @@ void printBuffer(const char *buffer, size_t size)
 }
 
 
-USVFSParameters SharedParameters::makeLocal() const
+usvfsParameters SharedParameters::makeLocal() const
 {
-  USVFSParameters result;
-  USVFSInitParametersInt(&result, instanceName.c_str(),
-                         currentSHMName.c_str(),
-                         currentInverseSHMName.c_str(),
-                         debugMode, logLevel, crashDumpsType,
-                         crashDumpsPath.c_str(),
-                         delayProcess);
-  return result;
+  return usvfsParameters(
+    instanceName.c_str(),
+    currentSHMName.c_str(),
+    currentInverseSHMName.c_str(),
+    debugMode, logLevel, crashDumpsType,
+    crashDumpsPath.c_str(),
+    delayProcess.count());
 }
 
 
-void usvfs::USVFSInitParametersInt(USVFSParameters *parameters,
-                                   const char *instanceName,
-                                   const char *currentSHMName,
-                                   const char *currentInverseSHMName,
-                                   bool debugMode,
-                                   LogLevel logLevel,
-                                   CrashDumpsType crashDumpsType,
-                                   const char *crashDumpsPath,
-                                   std::chrono::milliseconds delayProcess)
-{
-  parameters->debugMode = debugMode;
-  parameters->logLevel = logLevel;
-  parameters->crashDumpsType = crashDumpsType;
-  parameters->delayProcess = delayProcess;
-  strncpy_s(parameters->instanceName, instanceName, _TRUNCATE);
-  strncpy_s(parameters->currentSHMName, currentSHMName, _TRUNCATE);
-  strncpy_s(parameters->currentInverseSHMName, currentInverseSHMName, _TRUNCATE);
-  strncpy_s(parameters->crashDumpsPath, crashDumpsPath, _TRUNCATE);
-}
-
-
-HookContext::HookContext(const USVFSParameters &params, HMODULE module)
+HookContext::HookContext(const usvfsParameters& params, HMODULE module)
   : m_ConfigurationSHM(bi::open_or_create, params.instanceName, 8192)
   , m_Parameters(retrieveParameters(params))
   , m_Tree(m_Parameters->currentSHMName.c_str(), 65536)
@@ -135,7 +113,7 @@ HookContext::~HookContext()
   }
 }
 
-SharedParameters *HookContext::retrieveParameters(const USVFSParameters &params)
+SharedParameters *HookContext::retrieveParameters(const usvfsParameters& params)
 {
   std::pair<SharedParameters *, SharedMemoryT::size_type> res
       = m_ConfigurationSHM.find<SharedParameters>("parameters");
@@ -182,13 +160,18 @@ void HookContext::setCrashDumpsType(CrashDumpsType type)
   m_Parameters->crashDumpsType = type;
 }
 
+void HookContext::setDelayProcess(std::chrono::milliseconds delay)
+{
+  m_Parameters->delayProcess = delay;
+}
+
 void HookContext::updateParameters() const
 {
   m_Parameters->currentSHMName = m_Tree.shmName().c_str();
   m_Parameters->currentInverseSHMName = m_InverseTree.shmName().c_str();
 }
 
-USVFSParameters HookContext::callParameters() const
+usvfsParameters HookContext::callParameters() const
 {
   updateParameters();
   return m_Parameters->makeLocal();
@@ -308,7 +291,18 @@ void HookContext::unlockShared(const HookContext *instance)
   instance->m_Mutex.signal();
 }
 
-extern "C" DLLEXPORT HookContext *__cdecl CreateHookContext(const USVFSParameters &params, HMODULE module)
+
+// deprecated
+//
+extern "C" DLLEXPORT HookContext *__cdecl CreateHookContext(
+  const USVFSParameters &oldParams, HMODULE module)
+{
+  const usvfsParameters p(oldParams);
+  return usvfsCreateHookContext(p, module);
+}
+
+extern "C" DLLEXPORT usvfs::HookContext* WINAPI usvfsCreateHookContext(
+  const usvfsParameters& params, HMODULE module)
 {
   return new HookContext(params, module);
 }

@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "inject.h"
+#include "usvfsparametersprivate.h"
 #include <winapi.h>
 #include <exceptionex.h>
 #include <loghelpers.h>
@@ -36,14 +37,14 @@ namespace ush = usvfs::shared;
 using namespace winapi;
 
 void usvfs::injectProcess(const std::wstring &applicationPath
-                          , const USVFSParameters &parameters
+                          , const usvfsParameters &parameters
                           , const PROCESS_INFORMATION &processInfo)
 {
   injectProcess(applicationPath, parameters, processInfo.hProcess, processInfo.hThread);
 }
 
 void usvfs::injectProcess(const std::wstring &applicationPath
-                          , const USVFSParameters &parameters
+                          , const usvfsParameters &parameters
                           , HANDLE processHandle
                           , HANDLE threadHandle)
 {
@@ -106,7 +107,7 @@ void usvfs::injectProcess(const std::wstring &applicationPath
     spdlog::get("usvfs")->info("dll path: {}", log::wrap(dllPath.wstring()));
 
     InjectLib::InjectDLL(processHandle, threadHandle, dllPath.c_str(),
-                         "InitHooks", &parameters, sizeof(USVFSParameters));
+                         "InitHooks", &parameters, sizeof(parameters));
 
     spdlog::get("usvfs")->info("injection to same bitness process {} successful", ::GetProcessId(processHandle));
   } else {

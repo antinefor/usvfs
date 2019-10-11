@@ -214,12 +214,14 @@
     <ClCompile Include="..\src\usvfs_dll\semaphore.cpp" />
     <ClCompile Include="..\src\usvfs_dll\stringcast_boost.cpp" />
     <ClCompile Include="..\src\usvfs_dll\usvfs.cpp" />
+    <ClCompile Include="..\src\usvfs_dll\usvfsparameters.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\dllimport.h" />
     <ClInclude Include="..\include\logging.h" />
     <ClInclude Include="..\include\usvfs.h" />
     <ClInclude Include="..\include\usvfsparameters.h" />
+    <ClInclude Include="..\include\usvfsparametersprivate.h" />
     <ClInclude Include="..\include\usvfs_version.h" />
     <ClInclude Include="..\src\usvfs_dll\hookcallcontext.h" />
     <ClInclude Include="..\src\usvfs_dll\hookcontext.h" />

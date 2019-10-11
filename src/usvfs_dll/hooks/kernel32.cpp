@@ -226,7 +226,7 @@ BOOL WINAPI usvfs::hook_CreateProcessInternalW(
   LPWSTR cend = nullptr;
 
   std::wstring dllPath;
-  USVFSParameters callParameters;
+  usvfsParameters callParameters;
 
   { // scope for context lock
     auto context = READ_CONTEXT();

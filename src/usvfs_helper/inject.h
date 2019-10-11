@@ -33,7 +33,7 @@ namespace usvfs {
  * @param processInfo
  */
 void injectProcess(const std::wstring &applicationPath
-                   , const USVFSParameters &parameters
+                   , const usvfsParameters &parameters
                    , const PROCESS_INFORMATION &processInfo);
 
 /**
@@ -45,7 +45,7 @@ void injectProcess(const std::wstring &applicationPath
  *               a new thread is created in the process
  */
 void injectProcess(const std::wstring &applicationPath
-                   , const USVFSParameters &parameters
+                   , const usvfsParameters &parameters
                    , HANDLE process, HANDLE thread);
 
 }

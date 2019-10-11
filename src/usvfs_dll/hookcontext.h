@@ -24,6 +24,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "dllimport.h"
 #include "semaphore.h"
 #include <usvfsparameters.h>
+#include <usvfsparametersprivate.h>
 #include <directory_tree.h>
 #include <exceptionex.h>
 #include <winapi.h>
@@ -41,17 +42,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 
 namespace usvfs
 {
-
-void USVFSInitParametersInt(USVFSParameters *parameters,
-                            const char *instanceName,
-                            const char *currentSHMName,
-                            const char *currentInverseSHMName,
-                            bool debugMode,
-                            LogLevel logLevel,
-                            CrashDumpsType crashDumpsType,
-                            const char *crashDumpsPath,
-                            std::chrono::milliseconds delayProcess);
-
 
 typedef shared::VoidAllocatorT::rebind<DWORD>::other DWORDAllocatorT;
 typedef shared::VoidAllocatorT::rebind<shared::StringT>::other StringAllocatorT;
@@ -78,7 +68,7 @@ struct SharedParameters {
 
   SharedParameters &operator=(const SharedParameters &reference) = delete;
 
-  SharedParameters(const USVFSParameters &reference,
+  SharedParameters(const usvfsParameters& reference,
                    const shared::VoidAllocatorT &allocator)
     : instanceName(reference.instanceName, allocator)
     , currentSHMName(reference.currentSHMName, allocator)
@@ -87,7 +77,7 @@ struct SharedParameters {
     , logLevel(reference.logLevel)
     , crashDumpsType(reference.crashDumpsType)
     , crashDumpsPath(reference.crashDumpsPath, allocator)
-    , delayProcess(reference.delayProcess)
+    , delayProcess(reference.delayProcessMs)
     , userCount(1)
     , processBlacklist(allocator)
     , processList(allocator)
@@ -95,7 +85,7 @@ struct SharedParameters {
   {
   }
 
-  DLLEXPORT USVFSParameters makeLocal() const;
+  DLLEXPORT usvfsParameters makeLocal() const;
 
   shared::StringT instanceName;
   shared::StringT currentSHMName;
@@ -127,7 +117,7 @@ public:
   typedef unsigned int DataIDT;
 
 public:
-  HookContext(const USVFSParameters &params, HMODULE module);
+  HookContext(const usvfsParameters& params, HMODULE module);
 
   HookContext(const HookContext &reference) = delete;
 
@@ -180,7 +170,7 @@ public:
   /**
    * @return the parameters passed in on dll initialisation
    */
-  USVFSParameters callParameters() const;
+  usvfsParameters callParameters() const;
 
   /**
    * @return true if usvfs is running in debug mode
@@ -228,6 +218,7 @@ public:
 
   void setLogLevel(LogLevel level);
   void setCrashDumpsType(CrashDumpsType type);
+  void setDelayProcess(std::chrono::milliseconds delay);
 
   void updateParameters() const;
 
@@ -239,7 +230,7 @@ private:
   static void unlock(HookContext *instance);
   static void unlockShared(const HookContext *instance);
 
-  SharedParameters *retrieveParameters(const USVFSParameters &params);
+  SharedParameters* retrieveParameters(const usvfsParameters& params);
 
 private:
   static HookContext *s_Instance;
@@ -261,11 +252,18 @@ private:
   //  mutable std::recursive_mutex m_Mutex;
   mutable RecursiveBenaphore m_Mutex;
 };
-}
+
+} // namespace
+
 
 // exposed only to unit tests for easier testability
-extern "C" DLLEXPORT usvfs::HookContext *__cdecl CreateHookContext(
+extern "C" [[deprecated("deprecated, use usvfsCreateHookContext()")]]
+DLLEXPORT usvfs::HookContext *__cdecl CreateHookContext(
     const USVFSParameters &params, HMODULE module);
+
+extern "C" DLLEXPORT usvfs::HookContext* WINAPI usvfsCreateHookContext(
+  const usvfsParameters& params, HMODULE module);
+
 
 class PreserveGetLastError
 {
