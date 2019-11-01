@@ -89,6 +89,49 @@ void usvfsParameters::setProcessDelay(int milliseconds)
 extern "C"
 {
 
+const char* usvfsLogLevelToString(LogLevel lv)
+{
+  switch (lv)
+  {
+    case LogLevel::Debug:
+      return "debug";
+
+    case LogLevel::Info:
+      return "info";
+
+    case LogLevel::Warning:
+      return "warning";
+
+    case LogLevel::Error:
+      return "error";
+
+    default:
+      return "unknown";
+  }
+}
+
+const char* usvfsCrashDumpTypeToString(CrashDumpsType t)
+{
+  switch (t)
+  {
+    case CrashDumpsType::None:
+      return "none";
+
+    case CrashDumpsType::Mini:
+      return "mini";
+
+    case CrashDumpsType::Data:
+      return "data";
+
+    case CrashDumpsType::Full:
+      return "full";
+
+    default:
+      return "unknown";
+  }
+}
+
+
 usvfsParameters* usvfsCreateParameters()
 {
   return new (std::nothrow) usvfsParameters;

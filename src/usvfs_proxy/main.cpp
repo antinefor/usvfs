@@ -22,6 +22,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include <inject.h>
 #include <shared_memory.h>
 #include <usvfsparameters.h>
+#include <sharedparameters.h>
 #include <../usvfs_dll/hookcontext.h>
 #include <shmlogger.h>
 #include <spdlog.h>
@@ -151,8 +152,6 @@ int main(int argc, char **argv) {
       return 1;
     }
 
-    usvfsParameters par = params.first->makeLocal();
-
     boost::filesystem::path p(winapi::wide::getModuleFileName(nullptr));
 
     if (executable.empty()) {
@@ -164,20 +163,20 @@ int main(int argc, char **argv) {
 
       BOOL blacklisted = FALSE;
       TCHAR szModName[MAX_PATH];
+
       if (GetModuleFileNameEx(processHandle, NULL, szModName, sizeof(szModName) / sizeof(TCHAR))) {
-        for (usvfs::shared::StringT exec : params.first->processBlacklist) {
-          if (boost::algorithm::iends_with(std::wstring(szModName),
-                  "\\" + std::string(exec.data(), exec.size()))) {
-            logger->info("not injecting {} as application is blacklisted",
-                usvfs::shared::string_cast<std::string>(std::wstring(szModName)));
-            blacklisted = TRUE;
-            break;
-          }
+        const auto appName = usvfs::shared::string_cast<std::string>(szModName);
+
+        if (params.first->executableBlacklisted(appName, {})) {
+          logger->info("not injecting {} as application is blacklisted", appName);
+          blacklisted = TRUE;
         }
       }
+
       if (!blacklisted) {
-        usvfs::injectProcess(p.parent_path().wstring(), par, processHandle,
-          threadHandle);
+        usvfs::injectProcess(
+          p.parent_path().wstring(), params.first->makeLocal(),
+          processHandle, threadHandle);
       }
     } else {
       winapi::process::Result process =
@@ -191,17 +190,18 @@ int main(int argc, char **argv) {
       }
 
       BOOL blacklisted = FALSE;
-      for (usvfs::shared::StringT exec : params.first->processBlacklist) {
-        if (boost::algorithm::iends_with(executable,
-                "\\" + std::string(exec.data(), exec.size()))) {
-          logger->info("not injecting {} as application is blacklisted",
-              std::string(exec.data(), exec.size()));
-          blacklisted = TRUE;
-          break;
-        }
+
+      if (params.first->executableBlacklisted(executable, {})) {
+        logger->info(
+          "not injecting {} as application is blacklisted", executable);
+
+        blacklisted = TRUE;
       }
+
       if (!blacklisted) {
-        usvfs::injectProcess(p.parent_path().wstring(), par, process.processInfo);
+        usvfs::injectProcess(
+          p.parent_path().wstring(), params.first->makeLocal(),
+          process.processInfo);
       }
 
       ResumeThread(process.processInfo.hThread);

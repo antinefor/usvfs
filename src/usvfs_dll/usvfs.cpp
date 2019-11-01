@@ -184,14 +184,27 @@ void WINAPI USVFSUpdateParams(LogLevel level, CrashDumpsType type)
 
 void WINAPI usvfsUpdateParameters(usvfsParameters* p)
 {
+  spdlog::get("usvfs")->info(
+    "updating parameters:\n"
+    " . debugMode: {}\n"
+    " . log level: {}\n"
+    " . dump type: {}\n"
+    " . dump path: {}\n"
+    " . delay process: {}ms",
+    p->debugMode, usvfsLogLevelToString(p->logLevel),
+    usvfsCrashDumpTypeToString(p->crashDumpsType), p->crashDumpsPath,
+    p->delayProcessMs);
+
   // update actual values used:
   usvfs_dump_type = p->crashDumpsType;
+  usvfs_dump_path = ush::string_cast<std::wstring>(
+    p->crashDumpsPath, ush::CodePage::UTF8);
   SetLogLevel(p->logLevel);
 
   // update parameters in context so spawned process will inherit changes:
-  context->setLogLevel(p->logLevel);
-  context->setCrashDumpsType(p->crashDumpsType);
-  context->setDelayProcess(std::chrono::milliseconds(p->delayProcessMs));
+  context->setDebugParameters(
+    p->logLevel, p->crashDumpsType, p->crashDumpsPath,
+    std::chrono::milliseconds(p->delayProcessMs));
 }
 
 
