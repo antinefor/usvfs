@@ -175,7 +175,6 @@ private:
   static HookContext *s_Instance;
 
   shared::SharedMemoryT m_ConfigurationSHM;
-#pragma message("this should be protected by a system-wide named mutex")
   SharedParameters *m_Parameters{nullptr};
   RedirectionTreeContainer m_Tree;
   RedirectionTreeContainer m_InverseTree;

@@ -86,6 +86,7 @@ private:
     ForcedLibrary, ForcedLibraryAllocatorT>;
 
 
+  mutable bi::interprocess_mutex m_mutex;
   shared::StringT m_instanceName;
   shared::StringT m_currentSHMName;
   shared::StringT m_currentInverseSHMName;

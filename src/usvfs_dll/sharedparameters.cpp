@@ -45,6 +45,8 @@ SharedParameters::SharedParameters(const usvfsParameters& reference,
 
 usvfsParameters SharedParameters::makeLocal() const
 {
+  bi::scoped_lock lock(m_mutex);
+
   return usvfsParameters(
     m_instanceName.c_str(),
     m_currentSHMName.c_str(),
@@ -56,22 +58,27 @@ usvfsParameters SharedParameters::makeLocal() const
 
 std::string SharedParameters::instanceName() const
 {
+  bi::scoped_lock lock(m_mutex);
   return {m_instanceName.begin(), m_instanceName.end()};
 }
 
 std::string SharedParameters::currentSHMName() const
 {
+  bi::scoped_lock lock(m_mutex);
   return {m_currentSHMName.begin(), m_currentSHMName.end()};
 }
 
 std::string SharedParameters::currentInverseSHMName() const
 {
+  bi::scoped_lock lock(m_mutex);
   return {m_currentInverseSHMName.begin(), m_currentInverseSHMName.end()};
 }
 
 void SharedParameters::setSHMNames(
   const std::string& current, const std::string& inverse)
 {
+  bi::scoped_lock lock(m_mutex);
+
   m_currentSHMName.assign(current.begin(), current.end());
   m_currentInverseSHMName.assign(inverse.begin(), inverse.end());
 }
@@ -80,6 +87,8 @@ void SharedParameters::setDebugParameters(
   LogLevel level, CrashDumpsType dumpType, const std::string& dumpPath,
   std::chrono::milliseconds delayProcess)
 {
+  bi::scoped_lock lock(m_mutex);
+
   m_logLevel = level;
   m_crashDumpsType = dumpType;
   m_crashDumpsPath.assign(dumpPath.begin(), dumpPath.end());
@@ -88,78 +97,104 @@ void SharedParameters::setDebugParameters(
 
 std::size_t SharedParameters::userConnected()
 {
+  bi::scoped_lock lock(m_mutex);
   return ++m_userCount;
 }
 
 std::size_t SharedParameters::userDisconnected()
 {
+  bi::scoped_lock lock(m_mutex);
   return --m_userCount;
 }
 
 std::size_t SharedParameters::userCount()
 {
+  bi::scoped_lock lock(m_mutex);
   return m_userCount;
 }
 
 std::size_t SharedParameters::registeredProcessCount() const
 {
+  bi::scoped_lock lock(m_mutex);
   return m_processList.size();
 }
 
 std::vector<DWORD> SharedParameters::registeredProcesses() const
 {
+  bi::scoped_lock lock(m_mutex);
   return {m_processList.begin(), m_processList.end()};
 }
 
 void SharedParameters::registerProcess(DWORD pid)
 {
+  bi::scoped_lock lock(m_mutex);
   m_processList.insert(pid);
 }
 
 void SharedParameters::unregisterProcess(DWORD pid)
 {
-  auto itor = m_processList.find(pid);
+  {
+    bi::scoped_lock lock(m_mutex);
 
-  if (itor == m_processList.end()) {
-    spdlog::get("usvfs")->error(
-      "cannot unregister process {}, not in list", pid);
+    auto itor = m_processList.find(pid);
 
-    return;
+    if (itor != m_processList.end()) {
+      m_processList.erase(itor);
+      return;
+    }
   }
 
-  m_processList.erase(itor);
+  spdlog::get("usvfs")->error(
+    "cannot unregister process {}, not in list", pid);
 }
 
 void SharedParameters::blacklistExecutable(const std::string& name)
 {
+  bi::scoped_lock lock(m_mutex);
+
   m_processBlacklist.insert(shared::StringT(
     name.begin(), name.end(), m_processBlacklist.get_allocator()));
 }
 
 void SharedParameters::clearExecutableBlacklist()
 {
+  bi::scoped_lock lock(m_mutex);
   m_processBlacklist.clear();
 }
 
 bool SharedParameters::executableBlacklisted(
   const std::string& appName, const std::string& cmdLine) const
 {
-  for (const shared::StringT& sitem : m_processBlacklist) {
-    const auto item = "\\" + std::string(sitem.begin(), sitem.end());
+  bool blacklisted = false;
+  std::string log;
 
-    if (!appName.empty()) {
-      if (boost::algorithm::iends_with(appName, item)) {
-        spdlog::get("usvfs")->info("application {} is blacklisted", appName);
-        return true;
+  {
+    bi::scoped_lock lock(m_mutex);
+
+    for (const shared::StringT& sitem : m_processBlacklist) {
+      const auto item = "\\" + std::string(sitem.begin(), sitem.end());
+
+      if (!appName.empty()) {
+        if (boost::algorithm::iends_with(appName, item)) {
+          blacklisted = true;
+          log = fmt::format("application {} is blacklisted", appName);
+          break;
+        }
+      }
+
+      if (!cmdLine.empty()) {
+        if (boost::algorithm::icontains(cmdLine, item)) {
+          blacklisted = true;
+          log = fmt::format("command line {} is blacklisted", cmdLine);
+          break;
+        }
       }
     }
+  }
 
-    if (!cmdLine.empty()) {
-      if (boost::algorithm::icontains(cmdLine, item)) {
-        spdlog::get("usvfs")->info("command line {} is blacklisted", cmdLine);
-        return true;
-      }
-    }
+  if (blacklisted) {
+    spdlog::get("usvfs")->info(log);
+    return true;
   }
 
   return false;
@@ -168,6 +203,8 @@ bool SharedParameters::executableBlacklisted(
 void SharedParameters::addForcedLibrary(
   const std::string& processName, const std::string& libraryPath)
 {
+  bi::scoped_lock lock(m_mutex);
+
   m_forcedLibraries.push_front(ForcedLibrary(
     processName, libraryPath, m_forcedLibraries.get_allocator()));
 }
@@ -177,9 +214,13 @@ std::vector<std::string> SharedParameters::forcedLibraries(
 {
   std::vector<std::string> v;
 
-  for (const auto& lib : m_forcedLibraries) {
-    if (boost::algorithm::iequals(processName, lib.processName())) {
-      v.push_back(lib.libraryPath());
+  {
+    bi::scoped_lock lock(m_mutex);
+
+    for (const auto& lib : m_forcedLibraries) {
+      if (boost::algorithm::iequals(processName, lib.processName())) {
+        v.push_back(lib.libraryPath());
+      }
     }
   }
 
@@ -188,6 +229,7 @@ std::vector<std::string> SharedParameters::forcedLibraries(
 
 void SharedParameters::clearForcedLibraries()
 {
+  bi::scoped_lock lock(m_mutex);
   m_forcedLibraries.clear();
 }
 
