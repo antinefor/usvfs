@@ -532,6 +532,35 @@ BOOL WINAPI GetVFSProcessList(size_t *count, LPDWORD processIDs)
   return TRUE;
 }
 
+BOOL WINAPI GetVFSProcessList2(size_t* count, DWORD** buffer)
+{
+  if (!count || !buffer) {
+    SetLastError(ERROR_INVALID_PARAMETER);
+    return FALSE;
+  }
+
+  *count = 0;
+  *buffer = nullptr;
+
+  std::vector<DWORD> pids = context->registeredProcesses();
+  auto last = std::remove_if(pids.begin(), pids.end(), [](DWORD id) {
+    return !processStillActive(id);
+  });
+
+  pids.erase(last, pids.end());
+
+  if (pids.empty()) {
+    return TRUE;
+  }
+
+  *count = pids.size();
+  *buffer = static_cast<DWORD*>(std::calloc(pids.size(), sizeof(DWORD)));
+
+  std::copy(pids.begin(), pids.end(), *buffer);
+
+  return TRUE;
+}
+
 void WINAPI ClearVirtualMappings()
 {
   context->redirectionTable()->clear();
