@@ -32,9 +32,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/filesystem/path.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
-#include <boost/interprocess/containers/string.hpp>
-#include <boost/interprocess/containers/flat_set.hpp>
-#include <boost/interprocess/containers/slist.hpp>
 #include <memory>
 #include <set>
 #include <future>
@@ -43,65 +40,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 namespace usvfs
 {
 
-typedef shared::VoidAllocatorT::rebind<DWORD>::other DWORDAllocatorT;
-typedef shared::VoidAllocatorT::rebind<shared::StringT>::other StringAllocatorT;
-
-struct ForcedLibrary {
-  ForcedLibrary(const char *processName, const char *libraryPath,
-                const shared::VoidAllocatorT &allocator)
-    : processName(processName, allocator)
-    , libraryPath(libraryPath, allocator)
-  {
-  }
-
-  shared::StringT processName;
-  shared::StringT libraryPath;
-};
-
-typedef shared::VoidAllocatorT::rebind<ForcedLibrary>::other ForcedLibraryAllocatorT;
-
-struct SharedParameters {
-
-  SharedParameters() = delete;
-
-  SharedParameters(const SharedParameters &reference) = delete;
-
-  SharedParameters &operator=(const SharedParameters &reference) = delete;
-
-  SharedParameters(const usvfsParameters& reference,
-                   const shared::VoidAllocatorT &allocator)
-    : instanceName(reference.instanceName, allocator)
-    , currentSHMName(reference.currentSHMName, allocator)
-    , currentInverseSHMName(reference.currentInverseSHMName, allocator)
-    , debugMode(reference.debugMode)
-    , logLevel(reference.logLevel)
-    , crashDumpsType(reference.crashDumpsType)
-    , crashDumpsPath(reference.crashDumpsPath, allocator)
-    , delayProcess(reference.delayProcessMs)
-    , userCount(1)
-    , processBlacklist(allocator)
-    , processList(allocator)
-    , forcedLibraries(allocator)
-  {
-  }
-
-  DLLEXPORT usvfsParameters makeLocal() const;
-
-  shared::StringT instanceName;
-  shared::StringT currentSHMName;
-  shared::StringT currentInverseSHMName;
-  bool debugMode;
-  LogLevel logLevel;
-  CrashDumpsType crashDumpsType;
-  shared::StringT crashDumpsPath;
-  std::chrono::milliseconds delayProcess;
-  uint32_t userCount;
-  boost::container::flat_set<shared::StringT, std::less<shared::StringT>,
-                             StringAllocatorT> processBlacklist;
-  boost::container::flat_set<DWORD, std::less<DWORD>, DWORDAllocatorT> processList;
-  boost::container::slist<ForcedLibrary, ForcedLibraryAllocatorT> forcedLibraries;
-};
-
+class DLLEXPORT SharedParameters;
 
 /**
  * @brief context available to hooks. This is protected by a many-reader
@@ -216,9 +155,9 @@ public:
   void clearLibraryForceLoads();
   std::vector<std::wstring> librariesToForceLoad(const std::wstring &processName);
 
-  void setLogLevel(LogLevel level);
-  void setCrashDumpsType(CrashDumpsType type);
-  void setDelayProcess(std::chrono::milliseconds delay);
+  void setDebugParameters(
+    LogLevel level, CrashDumpsType dumpType, const std::string& dumpPath,
+    std::chrono::milliseconds delayProcess);
 
   void updateParameters() const;
 
@@ -236,7 +175,6 @@ private:
   static HookContext *s_Instance;
 
   shared::SharedMemoryT m_ConfigurationSHM;
-#pragma message("this should be protected by a system-wide named mutex")
   SharedParameters *m_Parameters{nullptr};
   RedirectionTreeContainer m_Tree;
   RedirectionTreeContainer m_InverseTree;

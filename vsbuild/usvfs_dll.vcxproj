@@ -212,6 +212,7 @@
     <ClCompile Include="..\src\usvfs_dll\hooks\ntdll.cpp" />
     <ClCompile Include="..\src\usvfs_dll\redirectiontree.cpp" />
     <ClCompile Include="..\src\usvfs_dll\semaphore.cpp" />
+    <ClCompile Include="..\src\usvfs_dll\sharedparameters.cpp" />
     <ClCompile Include="..\src\usvfs_dll\stringcast_boost.cpp" />
     <ClCompile Include="..\src\usvfs_dll\usvfs.cpp" />
     <ClCompile Include="..\src\usvfs_dll\usvfsparameters.cpp" />
@@ -219,6 +220,7 @@
   <ItemGroup>
     <ClInclude Include="..\include\dllimport.h" />
     <ClInclude Include="..\include\logging.h" />
+    <ClInclude Include="..\include\sharedparameters.h" />
     <ClInclude Include="..\include\usvfs.h" />
     <ClInclude Include="..\include\usvfsparameters.h" />
     <ClInclude Include="..\include\usvfsparametersprivate.h" />

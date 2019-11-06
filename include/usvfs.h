@@ -185,8 +185,7 @@ DLLEXPORT void WINAPI USVFSInitParameters(USVFSParameters *parameters,
 [[deprecated("deprecated, use usvfsUpdateParameters()")]]
 DLLEXPORT void WINAPI USVFSUpdateParams(LogLevel level, CrashDumpsType type);
 
-// the only information used from the parameters are the crash dump type, log
-// level and process delay
+// the instance and shm names are not updated
 //
 DLLEXPORT void WINAPI usvfsUpdateParameters(usvfsParameters* p);
 

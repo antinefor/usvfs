@@ -61,4 +61,7 @@ DLLEXPORT void usvfsSetCrashDumpType(usvfsParameters* p, CrashDumpsType type);
 DLLEXPORT void usvfsSetCrashDumpPath(usvfsParameters* p, const char* path);
 DLLEXPORT void usvfsSetProcessDelay(usvfsParameters* p, int milliseconds);
 
+DLLEXPORT const char* usvfsLogLevelToString(LogLevel lv);
+DLLEXPORT const char* usvfsCrashDumpTypeToString(CrashDumpsType t);
+
 }
