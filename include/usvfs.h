@@ -106,6 +106,20 @@ DLLEXPORT void WINAPI GetCurrentVFSName(char *buffer, size_t size);
  */
 DLLEXPORT BOOL WINAPI GetVFSProcessList(size_t *count, LPDWORD processIDs);
 
+// retrieve a list of all processes connected to the vfs, stores an array
+// of `count` elements in `*buffer`
+//
+// if this returns TRUE and `count` is not 0, the caller must release the buffer
+// with `free(*buffer)`
+//
+// return values:
+//   - ERROR_INVALID_PARAMETERS:  either `count` or `buffer` is NULL
+//   - ERROR_TOO_MANY_OPEN_FILES: there seems to be way too many usvfs processes
+//                                running, probably some internal error
+//   - ERROR_NOT_ENOUGH_MEMORY:   malloc() failed
+//
+DLLEXPORT BOOL WINAPI GetVFSProcessList2(size_t* count, DWORD** buffer);
+
 /**
  * spawn a new process that can see the virtual file system. The signature is identical to CreateProcess
  */
