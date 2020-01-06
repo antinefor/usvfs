@@ -32,7 +32,7 @@ class HookManager
 {
 public:
 
-  HookManager(const USVFSParameters &params, HMODULE module);
+  HookManager(const usvfsParameters& params, HMODULE module);
   ~HookManager();
 
   HookManager(const HookManager &reference) = delete;

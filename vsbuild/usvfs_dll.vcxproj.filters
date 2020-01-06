@@ -56,6 +56,12 @@
     <ClCompile Include="..\src\usvfs_dll\semaphore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\usvfs_dll\usvfsparameters.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\usvfs_dll\sharedparameters.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\usvfs_dll\hooks\cogetserverpid.h">
@@ -105,6 +111,12 @@
     </ClInclude>
     <ClInclude Include="..\src\usvfs_dll\maptracker.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\usvfsparametersprivate.h">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\sharedparameters.h">
+      <Filter>Header Files\include</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

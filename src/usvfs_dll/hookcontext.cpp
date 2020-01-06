@@ -23,10 +23,10 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "usvfs.h"
 #include "hookcallcontext.h"
 #include <winapi.h>
+#include <sharedparameters.h>
 #include <usvfsparameters.h>
 #include <shared_memory.h>
 #include "loghelpers.h"
-#include <boost/algorithm/string/predicate.hpp>
 
 namespace bi = boost::interprocess;
 using usvfs::shared::SharedMemoryT;
@@ -56,42 +56,12 @@ void printBuffer(const char *buffer, size_t size)
 }
 
 
-USVFSParameters SharedParameters::makeLocal() const
-{
-  USVFSParameters result;
-  USVFSInitParametersInt(&result, instanceName.c_str(),
-                         currentSHMName.c_str(),
-                         currentInverseSHMName.c_str(),
-                         debugMode, logLevel, crashDumpsType,
-                         crashDumpsPath.c_str());
-  return result;
-}
 
-
-void usvfs::USVFSInitParametersInt(USVFSParameters *parameters,
-                                   const char *instanceName,
-                                   const char *currentSHMName,
-                                   const char *currentInverseSHMName,
-                                   bool debugMode,
-                                   LogLevel logLevel,
-                                   CrashDumpsType crashDumpsType,
-                                   const char *crashDumpsPath)
-{
-  parameters->debugMode = debugMode;
-  parameters->logLevel = logLevel;
-  parameters->crashDumpsType = crashDumpsType;
-  strncpy_s(parameters->instanceName, instanceName, _TRUNCATE);
-  strncpy_s(parameters->currentSHMName, currentSHMName, _TRUNCATE);
-  strncpy_s(parameters->currentInverseSHMName, currentInverseSHMName, _TRUNCATE);
-  strncpy_s(parameters->crashDumpsPath, crashDumpsPath, _TRUNCATE);
-}
-
-
-HookContext::HookContext(const USVFSParameters &params, HMODULE module)
+HookContext::HookContext(const usvfsParameters& params, HMODULE module)
   : m_ConfigurationSHM(bi::open_or_create, params.instanceName, 8192)
   , m_Parameters(retrieveParameters(params))
-  , m_Tree(m_Parameters->currentSHMName.c_str(), 65536)
-  , m_InverseTree(m_Parameters->currentInverseSHMName.c_str(), 65536)
+  , m_Tree(m_Parameters->currentSHMName(), 65536)
+  , m_InverseTree(m_Parameters->currentInverseSHMName(), 65536)
   , m_DebugMode(params.debugMode)
   , m_DLLModule(module)
 {
@@ -99,11 +69,11 @@ HookContext::HookContext(const USVFSParameters &params, HMODULE module)
     throw std::runtime_error("singleton duplicate instantiation (HookContext)");
   }
 
-  ++m_Parameters->userCount;
+  const auto userCount = m_Parameters->userConnected();
 
-  spdlog::get("usvfs")->debug("context current shm: {0} (now {1} connections)",
-                              m_Parameters->currentSHMName.c_str(),
-                              m_Parameters->userCount);
+  spdlog::get("usvfs")->debug(
+    "context current shm: {0} (now {1} connections)",
+    m_Parameters->currentSHMName(), userCount);
 
   s_Instance = this;
 
@@ -121,34 +91,41 @@ void HookContext::remove(const char *instanceName)
 HookContext::~HookContext()
 {
   spdlog::get("usvfs")->info("releasing hook context");
-  s_Instance = nullptr;
 
-  if (--m_Parameters->userCount == 0) {
-    spdlog::get("usvfs")
-        ->info("removing tree {}", m_Parameters->instanceName.c_str());
-    bi::shared_memory_object::remove(m_Parameters->instanceName.c_str());
+  s_Instance = nullptr;
+  const auto userCount = m_Parameters->userDisconnected();
+
+  if (userCount == 0) {
+    spdlog::get("usvfs")->info("removing tree {}", m_Parameters->instanceName());
+    bi::shared_memory_object::remove(m_Parameters->instanceName().c_str());
   } else {
-    spdlog::get("usvfs")->info("{} users left", m_Parameters->userCount);
+    spdlog::get("usvfs")->info("{} users left", userCount);
   }
 }
 
-SharedParameters *HookContext::retrieveParameters(const USVFSParameters &params)
+SharedParameters *HookContext::retrieveParameters(const usvfsParameters& params)
 {
   std::pair<SharedParameters *, SharedMemoryT::size_type> res
       = m_ConfigurationSHM.find<SharedParameters>("parameters");
+
   if (res.first == nullptr) {
     // not configured yet
     spdlog::get("usvfs")->info("create config in {}", ::GetCurrentProcessId());
+
     res.first = m_ConfigurationSHM.construct<SharedParameters>("parameters")(
         params, VoidAllocatorT(m_ConfigurationSHM.get_segment_manager()));
+
     if (res.first == nullptr) {
       USVFS_THROW_EXCEPTION(bi::bad_alloc());
     }
   } else {
-    spdlog::get("usvfs")
-        ->info("access existing config in {}", ::GetCurrentProcessId());
+    spdlog::get("usvfs")->info(
+      "access existing config in {}", ::GetCurrentProcessId());
   }
-  spdlog::get("usvfs")->info("{} processes - {}", res.first->processList.size(), (int)res.first->logLevel);
+
+  spdlog::get("usvfs")->info(
+    "{} processes", res.first->registeredProcessCount());
+
   return res.first;
 }
 
@@ -169,23 +146,20 @@ HookContext::Ptr HookContext::writeAccess(const char*)
   return Ptr(s_Instance, unlock);
 }
 
-void HookContext::setLogLevel(LogLevel level)
-{
-  m_Parameters->logLevel = level;
-}
 
-void HookContext::setCrashDumpsType(CrashDumpsType type)
+void HookContext::setDebugParameters(
+  LogLevel level, CrashDumpsType dumpType, const std::string& dumpPath,
+  std::chrono::milliseconds delayProcess)
 {
-  m_Parameters->crashDumpsType = type;
+  m_Parameters->setDebugParameters(level, dumpType, dumpPath, delayProcess);
 }
 
 void HookContext::updateParameters() const
 {
-  m_Parameters->currentSHMName = m_Tree.shmName().c_str();
-  m_Parameters->currentInverseSHMName = m_InverseTree.shmName().c_str();
+  m_Parameters->setSHMNames(m_Tree.shmName(), m_InverseTree.shmName());
 }
 
-USVFSParameters HookContext::callParameters() const
+usvfsParameters HookContext::callParameters() const
 {
   updateParameters();
   return m_Parameters->makeLocal();
@@ -199,90 +173,81 @@ std::wstring HookContext::dllPath() const
 
 void HookContext::registerProcess(DWORD pid)
 {
-  m_Parameters->processList.insert(pid);
-}
-
-void HookContext::blacklistExecutable(const std::wstring &executableName)
-{
-  m_Parameters->processBlacklist.insert(shared::StringT(
-      shared::string_cast<std::string>(executableName, shared::CodePage::UTF8)
-          .c_str(),
-      m_Parameters->processBlacklist.get_allocator()));
-}
-
-void HookContext::clearExecutableBlacklist()
-{
-  m_Parameters->processBlacklist.clear();
-}
-
-BOOL HookContext::executableBlacklisted(LPCWSTR lpApplicationName, LPCWSTR lpCommandLine) const
-{
-  BOOL blacklisted = FALSE;
-
-  if (lpApplicationName) {
-    std::string appName = ush::string_cast<std::string>(lpApplicationName, ush::CodePage::UTF8);
-    for (shared::StringT item : m_Parameters->processBlacklist) {
-      if (boost::algorithm::iends_with(appName, std::string(item.data(), item.size()))) {
-        spdlog::get("usvfs")->info("application {} is blacklisted", appName);
-        blacklisted = TRUE;
-        break;
-      }
-    }
-  }
-
-  if (lpCommandLine) {
-    std::string cmdLine = ush::string_cast<std::string>(lpCommandLine, ush::CodePage::UTF8);
-    for (shared::StringT item : m_Parameters->processBlacklist) {
-      if (boost::algorithm::icontains(cmdLine, std::string(item.data(), item.size()))) {
-        spdlog::get("usvfs")->info("command line {} is blacklisted", cmdLine);
-        blacklisted = TRUE;
-        break;
-      }
-    }
-  }
-
-  return blacklisted;
-}
-
-void HookContext::forceLoadLibrary(const std::wstring &processName, const std::wstring &libraryPath)
-{
-  m_Parameters->forcedLibraries.push_front(ForcedLibrary(
-    shared::string_cast<std::string>(processName, shared::CodePage::UTF8).c_str(),
-    shared::string_cast<std::string>(libraryPath, shared::CodePage::UTF8).c_str(),
-    m_Parameters->forcedLibraries.get_allocator()));
-}
-
-void HookContext::clearLibraryForceLoads()
-{
-  m_Parameters->forcedLibraries.clear();
-}
-
-std::vector<std::wstring> HookContext::librariesToForceLoad(const std::wstring &processName)
-{
-  std::vector<std::wstring> results;
-  for (auto library : m_Parameters->forcedLibraries) {
-    std::string processNameString = shared::string_cast<std::string>(processName, shared::CodePage::UTF8);
-    if (stricmp(processNameString.c_str(), library.processName.c_str()) == 0) {
-      std::wstring libraryPathString = shared::string_cast<std::wstring>(library.libraryPath.c_str(), shared::CodePage::UTF8);
-      results.push_back(libraryPathString);
-    }
-  }
-  return results;
+  m_Parameters->registerProcess(pid);
 }
 
 void HookContext::unregisterCurrentProcess()
 {
-  auto iter = m_Parameters->processList.find(::GetCurrentProcessId());
-  m_Parameters->processList.erase(iter);
+  m_Parameters->unregisterProcess(::GetCurrentProcessId());
 }
 
 std::vector<DWORD> HookContext::registeredProcesses() const
 {
-  std::vector<DWORD> result;
-  for (DWORD procId : m_Parameters->processList) {
-    result.push_back(procId);
+  return m_Parameters->registeredProcesses();
+}
+
+void HookContext::blacklistExecutable(const std::wstring& wexe)
+{
+  const auto exe = shared::string_cast<std::string>(
+    wexe, shared::CodePage::UTF8);
+
+  spdlog::get("usvfs")->debug("blacklisting '{}'", exe);
+  m_Parameters->blacklistExecutable(exe);
+}
+
+void HookContext::clearExecutableBlacklist()
+{
+  spdlog::get("usvfs")->debug("clearing blacklist");
+  m_Parameters->clearExecutableBlacklist();
+}
+
+BOOL HookContext::executableBlacklisted(LPCWSTR wapp, LPCWSTR wcmd) const
+{
+  std::string app;
+  if (wapp) {
+    app = ush::string_cast<std::string>(wapp, ush::CodePage::UTF8);
   }
-  return result;
+
+  std::string cmd;
+  if (wcmd) {
+    cmd = ush::string_cast<std::string>(wcmd, ush::CodePage::UTF8);
+  }
+
+  return m_Parameters->executableBlacklisted(app, cmd);
+}
+
+void HookContext::forceLoadLibrary(
+  const std::wstring& wprocess, const std::wstring& wpath)
+{
+  const auto process = shared::string_cast<std::string>(
+    wprocess, shared::CodePage::UTF8);
+
+  const auto path = shared::string_cast<std::string>(
+    wpath, shared::CodePage::UTF8);
+
+  spdlog::get("usvfs")->debug(
+    "adding forced library '{}' for process '{}'", path, process);
+
+  m_Parameters->addForcedLibrary(process, path);
+}
+
+void HookContext::clearLibraryForceLoads()
+{
+  spdlog::get("usvfs")->debug("clearing forced libraries");
+  m_Parameters->clearForcedLibraries();
+}
+
+std::vector<std::wstring> HookContext::librariesToForceLoad(const std::wstring &processName)
+{
+  const auto v = m_Parameters->forcedLibraries(
+    shared::string_cast<std::string>(processName, shared::CodePage::UTF8));
+
+  std::vector<std::wstring> wv;
+  for (const auto& s : v) {
+    wv.push_back(shared::string_cast<std::wstring>(s, shared::CodePage::UTF8));
+  }
+
+  return wv;
 }
 
 void HookContext::registerDelayed(std::future<int> delayed)
@@ -305,7 +270,18 @@ void HookContext::unlockShared(const HookContext *instance)
   instance->m_Mutex.signal();
 }
 
-extern "C" DLLEXPORT HookContext *__cdecl CreateHookContext(const USVFSParameters &params, HMODULE module)
+
+// deprecated
+//
+extern "C" DLLEXPORT HookContext *__cdecl CreateHookContext(
+  const USVFSParameters &oldParams, HMODULE module)
+{
+  const usvfsParameters p(oldParams);
+  return usvfsCreateHookContext(p, module);
+}
+
+extern "C" DLLEXPORT usvfs::HookContext* WINAPI usvfsCreateHookContext(
+  const usvfsParameters& params, HMODULE module)
 {
   return new HookContext(params, module);
 }

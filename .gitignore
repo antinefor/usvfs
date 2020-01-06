@@ -19,3 +19,7 @@
 *.vcxproj.user
 msbuild.log
 
+/stderr.log
+/stderr_32.log
+/stdout.log
+/stdout_32.log

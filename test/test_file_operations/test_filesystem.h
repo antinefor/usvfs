@@ -10,7 +10,7 @@ class TestFileSystem
 public:
   static constexpr auto FILE_CONTENTS_PRINT_PREFIX = "== ";
 
-  typedef std::experimental::filesystem::path path;
+  typedef std::filesystem::path path;
   typedef std::FILE FILE;
 
   static path current_directory();

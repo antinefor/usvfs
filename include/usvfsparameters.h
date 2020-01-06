@@ -22,6 +22,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 
 #include "logging.h"
 #include "dllimport.h"
+#include <chrono>
 
 enum class CrashDumpsType : uint8_t {
   None,
@@ -30,8 +31,11 @@ enum class CrashDumpsType : uint8_t {
   Full
 };
 
-extern "C" {
+extern "C"
+{
 
+// deprecated, use usvfsParameters and usvfsCreateParameters()
+//
 struct USVFSParameters {
   char instanceName[65];
   char currentSHMName[65];
@@ -41,5 +45,23 @@ struct USVFSParameters {
   CrashDumpsType crashDumpsType{CrashDumpsType::None};
   char crashDumpsPath[260];
 };
+
+
+struct usvfsParameters;
+
+DLLEXPORT usvfsParameters* usvfsCreateParameters();
+DLLEXPORT usvfsParameters* usvfsDupeParameters(usvfsParameters* p);
+DLLEXPORT void usvfsCopyParameters(const usvfsParameters* source, usvfsParameters* dest);
+DLLEXPORT void usvfsFreeParameters(usvfsParameters* p);
+
+DLLEXPORT void usvfsSetInstanceName(usvfsParameters* p, const char* name);
+DLLEXPORT void usvfsSetDebugMode(usvfsParameters* p, BOOL debugMode);
+DLLEXPORT void usvfsSetLogLevel(usvfsParameters* p, LogLevel level);
+DLLEXPORT void usvfsSetCrashDumpType(usvfsParameters* p, CrashDumpsType type);
+DLLEXPORT void usvfsSetCrashDumpPath(usvfsParameters* p, const char* path);
+DLLEXPORT void usvfsSetProcessDelay(usvfsParameters* p, int milliseconds);
+
+DLLEXPORT const char* usvfsLogLevelToString(LogLevel lv);
+DLLEXPORT const char* usvfsCrashDumpTypeToString(CrashDumpsType t);
 
 }

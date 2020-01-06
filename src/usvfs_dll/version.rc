@@ -21,8 +21,8 @@ BEGIN
     BLOCK "040904B0"
     BEGIN
       VALUE "FileVersion", VER_FILEVERSION_STR
-      VALUE "CompanyName", "Community Edition\0"
-      VALUE "FileDescription",  "Windows OverlayFS\0"
+      VALUE "CompanyName", "Mod Organizer 2 Team\0"
+      VALUE "FileDescription",  "USVFS\0"
 #ifdef _WIN64
       VALUE "OriginalFilename", "usvfs_x64.dll\0"
 #else

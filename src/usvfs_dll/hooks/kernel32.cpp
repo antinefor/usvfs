@@ -226,7 +226,7 @@ BOOL WINAPI usvfs::hook_CreateProcessInternalW(
   LPWSTR cend = nullptr;
 
   std::wstring dllPath;
-  USVFSParameters callParameters;
+  usvfsParameters callParameters;
 
   { // scope for context lock
     auto context = READ_CONTEXT();
@@ -512,13 +512,15 @@ BOOL WINAPI usvfs::hook_DeleteFileW(LPCWSTR lpFileName)
   HOOK_START_GROUP(MutExHookGroup::DELETE_FILE)
   // Why is the usual if (!callContext.active()... check missing?
 
-  RerouteW reroute = RerouteW::create(READ_CONTEXT(), callContext, lpFileName);
+  const std::wstring path = RerouteW::canonizePath(RerouteW::absolutePath(lpFileName)).wstring();
+
+  RerouteW reroute = RerouteW::create(READ_CONTEXT(), callContext, path.c_str());
 
   PRE_REALCALL
   if (reroute.wasRerouted()) {
     res = ::DeleteFileW(reroute.fileName());
   } else {
-    res = ::DeleteFileW(lpFileName);
+    res = ::DeleteFileW(path.c_str());
   }
   POST_REALCALL
 
@@ -673,11 +675,21 @@ BOOL WINAPI usvfs::hook_MoveFileExA(LPCSTR lpExistingFileName,
   HOOK_END
   HOOK_START
 
-  const auto& existingFileName = ush::string_cast<std::wstring>(lpExistingFileName);
-  const auto& newFileName = ush::string_cast<std::wstring>(lpNewFileName);
+  const std::wstring existingFileName = ush::string_cast<std::wstring>(lpExistingFileName);
+
+  // careful: lpNewFileName can be null if dwFlags is
+  // MOVEFILE_DELAY_UNTIL_REBOOT, so don't blindly cast the string and make sure
+  // the null pointer is forwarded correctly
+  std::wstring newFileNameWstring;
+  const wchar_t* newFileName = nullptr;
+
+  if (lpNewFileName) {
+    newFileNameWstring = ush::string_cast<std::wstring>(lpNewFileName);
+    newFileName = newFileNameWstring.c_str();
+  }
 
   PRE_REALCALL
-    res = MoveFileExW(existingFileName.c_str(), newFileName.c_str(), dwFlags);
+    res = MoveFileExW(existingFileName.c_str(), newFileName, dwFlags);
   POST_REALCALL
 
   HOOK_END
@@ -790,10 +802,20 @@ BOOL WINAPI usvfs::hook_MoveFileWithProgressA(LPCSTR lpExistingFileName, LPCSTR 
   HOOK_START
 
   const auto& existingFileName = ush::string_cast<std::wstring>(lpExistingFileName);
-  const auto& newFileName = ush::string_cast<std::wstring>(lpNewFileName);
+
+  // careful: lpNewFileName can be null if dwFlags is
+  // MOVEFILE_DELAY_UNTIL_REBOOT, so don't blindly cast the string and make sure
+  // the null pointer is forwarded correctly
+  std::wstring newFileNameWstring;
+  const wchar_t* newFileName = nullptr;
+
+  if (lpNewFileName) {
+    newFileNameWstring = ush::string_cast<std::wstring>(lpNewFileName);
+    newFileName = newFileNameWstring.c_str();
+  }
 
   PRE_REALCALL
-    res = MoveFileWithProgressW(existingFileName.c_str(), newFileName.c_str(), lpProgressRoutine, lpData, dwFlags);
+    res = MoveFileWithProgressW(existingFileName.c_str(), newFileName, lpProgressRoutine, lpData, dwFlags);
   POST_REALCALL
 
   HOOK_END
@@ -868,7 +890,7 @@ BOOL WINAPI usvfs::hook_MoveFileWithProgressW(LPCWSTR lpExistingFileName, LPCWST
 
   if (res) {
     //TODO: this call causes the node to be removed twice in case of MOVEFILE_COPY_ALLOWED as the deleteFile hook lower level already takes care of it,
-    //but deleteFile can't be disabled since we are relying on it in case of MOVEFILE_REPLACE_EXISTING for the destination file. 
+    //but deleteFile can't be disabled since we are relying on it in case of MOVEFILE_REPLACE_EXISTING for the destination file.
     readReroute.removeMapping(READ_CONTEXT(), isDirectory); // Updating the rerouteCreate to check deleted file entries should make this okay (not related to comments above)
 
     if (writeReroute.newReroute()) {

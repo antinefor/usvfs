@@ -21,6 +21,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "usvfs.h"
 #include "usvfs_version.h"
 #include "hookmanager.h"
+#include "usvfsparametersprivate.h"
 #include "redirectiontree.h"
 #include "loghelpers.h"
 #include <DbgHelp.h>
@@ -144,7 +145,7 @@ void WINAPI InitLogging(bool toConsole)
   InitLoggingInternal(toConsole, false);
 }
 
-extern "C" DLLEXPORT bool WINAPI GetLogMessages(char *buffer, size_t size,
+extern "C" DLLEXPORT bool WINAPI GetLogMessages(LPSTR buffer, size_t size,
                                                 bool blocking)
 {
   buffer[0] = '\0';
@@ -168,15 +169,44 @@ void SetLogLevel(LogLevel level)
   spdlog::get("hooks")->set_level(ConvertLogLevel(level));
 }
 
-extern "C" void WINAPI USVFSUpdateParams(LogLevel level, CrashDumpsType type)
+// deprecated
+//
+void WINAPI USVFSUpdateParams(LogLevel level, CrashDumpsType type)
 {
-  // update actual values used:
-  usvfs_dump_type = type;
-  SetLogLevel(level);
-  // update parameters in context so spawned process will inherit changes:
-  context->setLogLevel(level);
-  context->setCrashDumpsType(type);
+  auto* p = usvfsCreateParameters();
+
+  usvfsSetLogLevel(p, level);
+  usvfsSetCrashDumpType(p, type);
+
+  usvfsUpdateParameters(p);
+  usvfsFreeParameters(p);
 }
+
+void WINAPI usvfsUpdateParameters(usvfsParameters* p)
+{
+  spdlog::get("usvfs")->info(
+    "updating parameters:\n"
+    " . debugMode: {}\n"
+    " . log level: {}\n"
+    " . dump type: {}\n"
+    " . dump path: {}\n"
+    " . delay process: {}ms",
+    p->debugMode, usvfsLogLevelToString(p->logLevel),
+    usvfsCrashDumpTypeToString(p->crashDumpsType), p->crashDumpsPath,
+    p->delayProcessMs);
+
+  // update actual values used:
+  usvfs_dump_type = p->crashDumpsType;
+  usvfs_dump_path = ush::string_cast<std::wstring>(
+    p->crashDumpsPath, ush::CodePage::UTF8);
+  SetLogLevel(p->logLevel);
+
+  // update parameters in context so spawned process will inherit changes:
+  context->setDebugParameters(
+    p->logLevel, p->crashDumpsType, p->crashDumpsPath,
+    std::chrono::milliseconds(p->delayProcessMs));
+}
+
 
 //
 // Structured Exception handling
@@ -265,8 +295,8 @@ int WINAPI CreateMiniDump(PEXCEPTION_POINTERS exceptionPtrs, CrashDumpsType type
 }
 
 static bool exceptionInUSVFS(PEXCEPTION_POINTERS exceptionPtrs) {
-  if (!dllModule) // shouldn't happend, check just in case
-    return true;  // create dump to better understand how this could happend
+  if (!dllModule) // shouldn't happen, check just in case
+    return true;  // create dump to better understand how this could happen
 
   std::pair<uintptr_t, uintptr_t> range = winapi::ex::getSectionRange(dllModule);
 
@@ -299,7 +329,7 @@ LONG WINAPI VEHandler(PEXCEPTION_POINTERS exceptionPtrs)
   // inside our hooks at least on x64, which is the main reason why want a crash collection
   // from usvfs.
   // As a workaround/compromise we catch vectored exception but only ones that originate
-  // direactly within the usvfs code:
+  // directly within the usvfs code:
   if (!exceptionInUSVFS(exceptionPtrs))
     return EXCEPTION_CONTINUE_SEARCH;
 
@@ -323,9 +353,13 @@ void __cdecl InitHooks(LPVOID parameters, size_t)
 {
   InitLoggingInternal(false, true);
 
-  const USVFSParameters *params = reinterpret_cast<USVFSParameters *>(parameters);
+  const usvfsParameters* params = reinterpret_cast<usvfsParameters*>(parameters);
   usvfs_dump_type = params->crashDumpsType;
   usvfs_dump_path = ush::string_cast<std::wstring>(params->crashDumpsPath, ush::CodePage::UTF8);
+
+  if (params->delayProcessMs > 0) {
+    ::Sleep(static_cast<unsigned long>(params->delayProcessMs));
+  }
 
   SetLogLevel(params->logLevel);
 
@@ -353,7 +387,7 @@ void __cdecl InitHooks(LPVOID parameters, size_t)
     auto exePath = boost::dll::program_location();
     auto libraries = context->librariesToForceLoad(exePath.filename().c_str());
     for (auto library : libraries) {
-      if (std::experimental::filesystem::exists(library)) {
+      if (std::filesystem::exists(library)) {
         const auto ret = LoadLibraryExW(library.c_str(), NULL, 0);
         if (ret) {
           spdlog::get("usvfs")
@@ -380,13 +414,34 @@ void WINAPI GetCurrentVFSName(char *buffer, size_t size)
 }
 
 
-BOOL WINAPI CreateVFS(const USVFSParameters *params)
+// deprecated
+//
+BOOL WINAPI CreateVFS(const USVFSParameters *oldParams)
 {
-  usvfs::HookContext::remove(params->instanceName);
-  return ConnectVFS(params);
+  const usvfsParameters p(*oldParams);
+  const auto r = usvfsCreateVFS(&p);
+
+  return r;
 }
 
-BOOL WINAPI ConnectVFS(const USVFSParameters *params)
+BOOL WINAPI usvfsCreateVFS(const usvfsParameters* p)
+{
+  usvfs::HookContext::remove(p->instanceName);
+  return usvfsConnectVFS(p);
+}
+
+
+// deprecated
+//
+BOOL WINAPI ConnectVFS(const USVFSParameters *oldParams)
+{
+  const usvfsParameters p(*oldParams);
+  const auto r = usvfsConnectVFS(&p);
+
+  return r;
+}
+
+BOOL WINAPI usvfsConnectVFS(const usvfsParameters* params)
 {
   if (spdlog::get("usvfs").get() == nullptr) {
     // create temporary logger so we don't get null-pointer exceptions
@@ -474,6 +529,35 @@ BOOL WINAPI GetVFSProcessList(size_t *count, LPDWORD processIDs)
     }
     *count = realCount;
   }
+  return TRUE;
+}
+
+BOOL WINAPI GetVFSProcessList2(size_t* count, DWORD** buffer)
+{
+  if (!count || !buffer) {
+    SetLastError(ERROR_INVALID_PARAMETER);
+    return FALSE;
+  }
+
+  *count = 0;
+  *buffer = nullptr;
+
+  std::vector<DWORD> pids = context->registeredProcesses();
+  auto last = std::remove_if(pids.begin(), pids.end(), [](DWORD id) {
+    return !processStillActive(id);
+  });
+
+  pids.erase(last, pids.end());
+
+  if (pids.empty()) {
+    return TRUE;
+  }
+
+  *count = pids.size();
+  *buffer = static_cast<DWORD*>(std::calloc(pids.size(), sizeof(DWORD)));
+
+  std::copy(pids.begin(), pids.end(), *buffer);
+
   return TRUE;
 }
 
@@ -771,6 +855,8 @@ VOID WINAPI PrintDebugInfo()
 }
 
 
+// deprecated
+//
 void WINAPI USVFSInitParameters(USVFSParameters *parameters,
                                 const char *instanceName, bool debugMode,
                                 LogLevel logLevel,
@@ -780,6 +866,7 @@ void WINAPI USVFSInitParameters(USVFSParameters *parameters,
   parameters->debugMode = debugMode;
   parameters->logLevel = logLevel;
   parameters->crashDumpsType = crashDumpsType;
+
   strncpy_s(parameters->instanceName, instanceName, _TRUNCATE);
   if (crashDumpsPath && *crashDumpsPath && strlen(crashDumpsPath) < _countof(parameters->crashDumpsPath)) {
     memcpy(parameters->crashDumpsPath, crashDumpsPath, strlen(crashDumpsPath)+1);
@@ -797,6 +884,11 @@ void WINAPI USVFSInitParameters(USVFSParameters *parameters,
   _snprintf(parameters->currentInverseSHMName, 60, "inv_%s", instanceName);
 }
 
+
+const char* WINAPI USVFSVersionString()
+{
+  return USVFS_VERSION_STRING;
+}
 
 //
 // DllMain
