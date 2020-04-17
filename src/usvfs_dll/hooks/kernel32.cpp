@@ -1292,6 +1292,17 @@ HANDLE WINAPI usvfs::hook_FindFirstFileExW(LPCWSTR lpFileName, FINDEX_INFO_LEVEL
     return res;
   }
 
+  // FindFirstFileEx() must fail early if the path ends with a slash
+  if (lpFileName) {
+    const auto len = wcslen(lpFileName);
+    if (len > 0) {
+      if (lpFileName[len - 1] == L'\\' || lpFileName[len - 1] == L'/') {
+        spdlog::get("usvfs")->warn("hook_FindFirstFileExW(): path '{}' ends with slash, always fails", fs::path(lpFileName).string());
+        return INVALID_HANDLE_VALUE;
+      }
+    }
+  }
+
   fs::path finalPath;
   RerouteW reroute;
   fs::path originalPath;
