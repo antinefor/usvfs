@@ -3,9 +3,11 @@ echo ^> Staging %1 ...
 shift
 
 :loop
-if "%1"=="" goto done
-if "%2"=="" goto error
-echo f | xcopy /F/Y "%1" "%2" | find " -> "
+set src=%~1
+set dest=%~2
+if "%src%"=="" goto done
+if "%dest%"=="" goto error
+echo f | xcopy /F/Y "%src%" "%dest%" | find " -> "
 shift
 shift
 goto loop
