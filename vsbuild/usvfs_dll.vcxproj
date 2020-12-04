@@ -112,7 +112,7 @@
       <AdditionalDependencies>Shlwapi.lib;Version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
-      <Command>stage_helper.cmd $(TargetName) $(TargetPath) $(STAGING_DLL)\$(TargetFileName) $(TargetDir)$(TargetName).lib $(STAGING_LIB)\$(TargetName).lib $(TargetDir)$(TargetName).pdb $(STAGING_PDB)\$(TargetName).pdb</Command>
+      <Command>stage_helper.cmd "$(TargetName)" "$(TargetPath)" "$(STAGING_DLL)\$(TargetFileName)" "$(TargetDir)$(TargetName).lib" "$(STAGING_LIB)\$(TargetName).lib" "$(TargetDir)$(TargetName).pdb" "$(STAGING_PDB)\$(TargetName).pdb"</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Staging</Message>
@@ -133,7 +133,7 @@
       <AdditionalDependencies>Shlwapi.lib;Version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
-      <Command>stage_helper.cmd $(TargetName) $(TargetPath) $(STAGING_DLL)\$(TargetFileName) $(TargetDir)$(TargetName).lib $(STAGING_LIB)\$(TargetName).lib $(TargetDir)$(TargetName).pdb $(STAGING_PDB)\$(TargetName).pdb</Command>
+      <Command>stage_helper.cmd "$(TargetName)" "$(TargetPath)" "$(STAGING_DLL)\$(TargetFileName)" "$(TargetDir)$(TargetName).lib" "$(STAGING_LIB)\$(TargetName).lib" "$(TargetDir)$(TargetName).pdb" "$(STAGING_PDB)\$(TargetName).pdb"</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Staging</Message>
@@ -161,7 +161,7 @@
       <AdditionalDependencies>Shlwapi.lib;Version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
-      <Command>stage_helper.cmd $(TargetName) $(TargetPath) $(STAGING_DLL)\$(TargetFileName) $(TargetDir)$(TargetName).lib $(STAGING_LIB)\$(TargetName).lib $(TargetDir)$(TargetName).pdb $(STAGING_PDB)\$(TargetName).pdb</Command>
+      <Command>stage_helper.cmd "$(TargetName)" "$(TargetPath)" "$(STAGING_DLL)\$(TargetFileName)" "$(TargetDir)$(TargetName).lib" "$(STAGING_LIB)\$(TargetName).lib" "$(TargetDir)$(TargetName).pdb" "$(STAGING_PDB)\$(TargetName).pdb"</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Staging</Message>
@@ -189,7 +189,7 @@
       <AdditionalDependencies>Shlwapi.lib;Version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
-      <Command>stage_helper.cmd $(TargetName) $(TargetPath) $(STAGING_DLL)\$(TargetFileName) $(TargetDir)$(TargetName).lib $(STAGING_LIB)\$(TargetName).lib $(TargetDir)$(TargetName).pdb $(STAGING_PDB)\$(TargetName).pdb</Command>
+      <Command>stage_helper.cmd "$(TargetName)" "$(TargetPath)" "$(STAGING_DLL)\$(TargetFileName)" "$(TargetDir)$(TargetName).lib" "$(STAGING_LIB)\$(TargetName).lib" "$(TargetDir)$(TargetName).pdb" "$(STAGING_PDB)\$(TargetName).pdb"</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Staging</Message>

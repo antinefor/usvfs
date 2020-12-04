@@ -108,7 +108,7 @@
     </ClCompile>
     <CustomBuildStep>
       <Message>Staging</Message>
-      <Command>stage_helper.cmd $(ProjectName) $(TargetPath) $(STAGING_EXE)\$(ProjectName).exe $(TargetDir)$(TargetName).pdb $(STAGING_PDB)\$(ProjectName).pdb</Command>
+      <Command>stage_helper.cmd "$(ProjectName)" "$(TargetPath)" "$(STAGING_EXE)\$(ProjectName).exe" "$(TargetDir)$(TargetName).pdb" "$(STAGING_PDB)\$(ProjectName).pdb"</Command>
       <Outputs>$(STAGING_EXE)\$(ProjectName).exe</Outputs>
       <Inputs>$(TargetPath)</Inputs>
     </CustomBuildStep>
@@ -133,7 +133,7 @@
     </Link>
     <CustomBuildStep>
       <Message>Staging</Message>
-      <Command>stage_helper.cmd $(TargetName) $(TargetPath) $(STAGING_EXE)\$(TargetFileName) $(TargetDir)$(TargetName).pdb $(STAGING_PDB)\$(TargetName).pdb</Command>
+      <Command>stage_helper.cmd "$(TargetName)" "$(TargetPath)" "$(STAGING_EXE)\$(TargetFileName)" "$(TargetDir)$(TargetName).pdb" "$(STAGING_PDB)\$(TargetName).pdb"</Command>
       <Outputs>$(STAGING_EXE)\$(TargetFileName)</Outputs>
       <Inputs>$(TargetPath)</Inputs>
     </CustomBuildStep>
@@ -155,7 +155,7 @@
       <Message>Staging</Message>
       <Inputs>$(TargetPath)</Inputs>
       <Outputs>$(STAGING_EXE)\$(TargetFileName)</Outputs>
-      <Command>stage_helper.cmd $(TargetName) $(TargetPath) $(STAGING_EXE)\$(TargetFileName) $(TargetDir)$(TargetName).pdb $(STAGING_PDB)\$(TargetName).pdb</Command>
+      <Command>stage_helper.cmd "$(TargetName)" "$(TargetPath)" "$(STAGING_EXE)\$(TargetFileName)" "$(TargetDir)$(TargetName).pdb" "$(STAGING_PDB)\$(TargetName).pdb"</Command>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
