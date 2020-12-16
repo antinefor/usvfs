@@ -955,9 +955,8 @@ private:
   // createOrOpen() will create it and copy the old data to it
   //
   // because there is only one process, the old shared memory will be considered
-  // unused and the SHMInfo object returned by createOrOpen() will have the name
-  // of the old, now dead shared memory, which will be deleted at the end of
-  // reassign()
+  // unused and createOrOpen() will return the name of the old, now dead shared
+  // memory object, which will be deleted at the end of reassign()
   //
   //
   // when multiple processes are involved, things are more complicated
@@ -980,9 +979,13 @@ private:
   // way above); if it's true, it means that it's pointing to an outdated shared
   // memory block and must find the new one that process A created
   //
-  // note that process A may have created _multiple_ shared memory blocks by the
-  // time reassign() is called in process B, but all of these blocks will have
-  // been marked as outdated, which is why the whole thing is in a loop
+  //
+  // todo, bug: process A may have created _multiple_ shared memory blocks by
+  // the time reassign() is called in process B, but all of these blocks except
+  // the last one may have already been deallocated, so process B will end up
+  // creating a new block in between
+  //
+  // blocks should only be deallocated when all the blocks _below_ it are unused
   //
   //
   // re-entrancy: every time a process switches to a new shared memory block, it
