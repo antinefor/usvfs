@@ -433,7 +433,7 @@ public:
   const_file_iterator filesEnd() const { return m_Nodes.end(); }
 
   /**
-   * @brief erase the leaf at the specfied iterator
+   * @brief erase the leaf at the specified iterator
    * @return an iterator to the following file
    **/
   file_iterator erase(file_iterator iter) { return m_Nodes.erase(iter); }
@@ -453,7 +453,7 @@ public:
         par->erase(self);
       }
       else {
-        //trying to remove a node that des not exist, most likely because it was already removed in a lower level call.
+        //trying to remove a node that does not exist, most likely because it was already removed in a lower level call.
         //this is known to happen when MoveFile has the MOVEFILE_COPY_ALLOWED flag and moving a mapped file.
         spdlog::get("usvfs")->warn("Failed to remove inexisting node from tree: {}", m_Name.c_str());
       }
@@ -625,7 +625,7 @@ public:
   }
 
   /**
-   * @return retrieve an allocater that can be used to create objects in this tree
+   * @return retrieve an allocator that can be used to create objects in this tree
    */
   VoidAllocatorT allocator() {
     return VoidAllocatorT(m_SHM->get_segment_manager());
@@ -1028,7 +1028,7 @@ private:
         nextName.c_str(), m_SHM->get_size() * 2);
 
       // if this process was the last user of the previous block, it must be
-      // deallocated, but only after this whole thing is finished, becase it
+      // deallocated, but only after this whole thing is finished, because it
       // can end up calling reassign() again
       if (deadSHMName) {
         deadSHMNames.push_back(*deadSHMName);
