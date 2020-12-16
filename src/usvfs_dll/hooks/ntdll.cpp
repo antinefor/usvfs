@@ -1416,11 +1416,37 @@ NTSTATUS WINAPI usvfs::hook_NtTerminateProcess(
   HANDLE ProcessHandle,
   NTSTATUS ExitStatus)
 {
+  // this hook is normally called when terminating another process, in which
+  // case there's nothing to do
+  //
+  // if the current process exits normally, the ExitProcess() hook is called
+  // and disconnects from the vfs; if the current process crashes, this hook
+  // is not called, the process just dies
+  //
+  // but a process can also terminate itself, bypassing ExitProcess(), and
+  // ending up here, in which case the vfs should be disconnected
+  //
+  // NtTerminateProcess() can be called two different ways to terminate the
+  // current process:
+  //   - with a valid handle for the current process, or
+  //   - with -1, because that's what GetCurrentProcess() returns
+  //
+  // it's unclear what a NULL handle represents, the behaviour is not
+  // documented anywhere, but looking at ReactOS, it's also interpreted as the
+  // current process
+
   NTSTATUS res = STATUS_SUCCESS;
 
   HOOK_START
 
-  DisconnectVFS();
+  const bool isCurrentProcess =
+    ProcessHandle == (HANDLE)-1 ||
+    ProcessHandle == 0 ||
+    GetProcessId(ProcessHandle) == GetCurrentProcessId();
+
+  if (isCurrentProcess) {
+    DisconnectVFS();
+  }
 
   res = ::NtTerminateProcess(ProcessHandle, ExitStatus);
 
