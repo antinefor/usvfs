@@ -58,10 +58,10 @@ void printBuffer(const char *buffer, size_t size)
 
 
 HookContext::HookContext(const usvfsParameters& params, HMODULE module)
-  : m_ConfigurationSHM(bi::open_or_create, params.instanceName, 8192)
+  : m_ConfigurationSHM(bi::open_or_create, params.instanceName, 64 * 1024)
   , m_Parameters(retrieveParameters(params))
-  , m_Tree(m_Parameters->currentSHMName(), 65536)
-  , m_InverseTree(m_Parameters->currentInverseSHMName(), 65536)
+  , m_Tree(m_Parameters->currentSHMName(), 4 * 1024 * 1024) // 4 MiB empirically covers most small setups without need to resize
+  , m_InverseTree(m_Parameters->currentInverseSHMName(), 128 * 1024) // 128 KiB should cover reverse tree for even larger setups
   , m_DebugMode(params.debugMode)
   , m_DLLModule(module)
 {
