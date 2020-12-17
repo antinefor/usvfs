@@ -146,6 +146,7 @@
     <ClCompile Include="..\src\shared\stringutils.cpp" />
     <ClCompile Include="..\src\shared\test_helpers.cpp" />
     <ClCompile Include="..\src\shared\unicodestring.cpp" />
+    <ClCompile Include="..\src\shared\wildcard.cpp" />
     <ClCompile Include="..\src\shared\winapi.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -162,6 +163,7 @@
     <ClInclude Include="..\src\shared\test_helpers.h" />
     <ClInclude Include="..\src\shared\tree_container.h" />
     <ClInclude Include="..\src\shared\unicodestring.h" />
+    <ClInclude Include="..\src\shared\wildcard.h" />
     <ClInclude Include="..\src\shared\winapi.h" />
     <ClInclude Include="..\src\shared\windows_sane.h" />
   </ItemGroup>

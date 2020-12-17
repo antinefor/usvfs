@@ -24,6 +24,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "logging.h"
 #include "stringutils.h"
 #include "exceptionex.h"
+#include "wildcard.h"
 
 // simplify unit tests by allowing access to private members
 #ifndef PRIVATE
@@ -33,8 +34,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 
 namespace usvfs::shared
 {
-
-LPCSTR PartialMatch(LPCSTR pszString, LPCSTR pszMatch);
 
 template <typename T, typename U>
 struct SHMDataCreator
@@ -560,7 +559,7 @@ PRIVATE:
         // multiple!), search in subdirectory
         iter->second->findLocal(output, pattern.substr(1));
       }
-      else if ((remainder = PartialMatch(iter->second->name().c_str(), pattern.c_str())) != nullptr)
+      else if ((remainder = wildcard::PartialMatch(iter->second->name().c_str(), pattern.c_str())) != nullptr)
       {
         if ((*remainder == '\0') || (strcmp(remainder, "*") == 0)) {
           NodePtrT node = iter->second;

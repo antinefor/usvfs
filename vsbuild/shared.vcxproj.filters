@@ -39,6 +39,9 @@
     <ClCompile Include="..\src\shared\stringcast.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\shared\wildcard.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\shared\addrtools.h">
@@ -84,6 +87,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\src\shared\tree_container.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\shared\wildcard.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
