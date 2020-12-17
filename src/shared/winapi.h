@@ -21,9 +21,8 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "windows_sane.h"
-#include "windows_error.h"
 #include "logging.h"
-#include "stringcast_win.h"
+#include "stringcast.h"
 
 #define ALIAS(alias, original) template <typename... Args>\
     auto alias(Args&&... args) -> decltype(original(std::forward<Args>(args)...)) {\

@@ -93,3 +93,49 @@ inline void throw_exception(const std::exception &e) {
 #endif
 
 void logExtInfo(const std::exception &e, LogLevel logLevel = LogLevel::Warning);
+
+
+namespace usvfs::shared
+{
+
+class windows_error : public std::runtime_error {
+public:
+  windows_error(const std::string& message, int errorcode = GetLastError())
+    : runtime_error(constructMessage(message, errorcode)), m_ErrorCode(errorcode)
+  {}
+  int getErrorCode() const { return m_ErrorCode; }
+private:
+  std::string constructMessage(const std::string& input, int errorcode);
+private:
+  int m_ErrorCode;
+};
+
+
+class guard
+{
+public:
+  explicit guard(std::function<void ()> f)
+    : m_f(std::move(f))
+  {
+  }
+
+  ~guard()
+  {
+    if (m_f) {
+      m_f();
+    }
+  }
+
+  guard(const guard&);
+  guard& operator=(const guard&);
+
+private:
+  std::function<void ()> m_f;
+};
+
+} // namespace
+
+#define CONCATENATE_DIRECT(s1, s2) s1##s2
+#define CONCATENATE(s1, s2) CONCATENATE_DIRECT(s1, s2)
+#define ANONYMOUS_VARIABLE(str) CONCATENATE(str, __LINE__)
+#define ON_BLOCK_EXIT(f) usvfs::shared::guard ANONYMOUS_VARIABLE(guard)(f)

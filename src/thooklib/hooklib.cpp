@@ -30,7 +30,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "ttrampolinepool.h"
 #include <shmlogger.h>
 #include <addrtools.h>
-#include <windows_error.h>
 #include <winapi.h>
 
 #if BOOST_ARCH_X86_64

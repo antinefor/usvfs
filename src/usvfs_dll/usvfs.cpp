@@ -34,7 +34,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/algorithm/string.hpp>
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <ttrampolinepool.h>
-#include <scopeguard.h>
 #include <stringcast.h>
 #include <inject.h>
 #include <spdlog.h>

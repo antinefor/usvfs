@@ -19,7 +19,6 @@ You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "unicodestring.h"
-#include "windows_error.h"
 #include "stringutils.h"
 #include "stringcast.h"
 #include "logging.h"

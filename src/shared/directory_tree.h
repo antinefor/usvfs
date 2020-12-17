@@ -20,9 +20,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
 
-#include "wildcard.h"
 #include "shared_memory.h"
-#include "scopeguard.h"
 #include "logging.h"
 #include "stringutils.h"
 #include "exceptionex.h"
@@ -40,6 +38,8 @@ namespace fs = boost::filesystem;
 
 namespace usvfs::shared
 {
+
+LPCSTR PartialMatch(LPCSTR pszString, LPCSTR pszMatch);
 
 template <typename T, typename U>
 struct SHMDataCreator
@@ -565,7 +565,7 @@ PRIVATE:
         // multiple!), search in subdirectory
         iter->second->findLocal(output, pattern.substr(1));
       }
-      else if ((remainder = wildcard::PartialMatch(iter->second->name().c_str(), pattern.c_str())) != nullptr)
+      else if ((remainder = PartialMatch(iter->second->name().c_str(), pattern.c_str())) != nullptr)
       {
         if ((*remainder == '\0') || (strcmp(remainder, "*") == 0)) {
           NodePtrT node = iter->second;
@@ -620,7 +620,7 @@ public:
     std::smatch match;
     std::string shmName(m_SHMName.c_str());
     regex_match(shmName, match, pattern);
-    
+
     if (match.size() != 3) {
       m_SHMName += "_1";
     }

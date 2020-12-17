@@ -22,10 +22,8 @@
 #include <cwctype>
 #include <codecvt>
 #include <locale>
-#include <windows_error.h>
 #include <stringutils.h>
 #include <stringcast.h>
-#include <scopeguard.h>
 #include <addrtools.h>
 #include <unicodestring.h>
 #include <windows.h>

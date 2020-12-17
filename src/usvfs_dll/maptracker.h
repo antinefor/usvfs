@@ -8,7 +8,7 @@
 
 #include "hookcontext.h"
 #include "hookcallcontext.h"
-#include "stringcast_basic.h"
+#include "stringcast.h"
 
 namespace usvfs {
 

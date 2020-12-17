@@ -26,7 +26,6 @@ namespace fs = boost::filesystem;
 
 #include <stdexcept>
 #include "injectlib.h"
-#include <windows_error.h>
 #include <stringutils.h>
 #include <stringcast.h>
 #include <exceptionex.h>

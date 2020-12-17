@@ -1,6 +1,6 @@
 #include "semaphore.h"
+#include "exceptionex.h"
 #include <spdlog.h>
-#include <scopeguard.h>
 
 
 RecursiveBenaphore::RecursiveBenaphore()

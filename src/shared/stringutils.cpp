@@ -20,7 +20,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "stringutils.h"
 #include "windows_sane.h"
-#include "windows_error.h"
 
 #pragma warning ( disable : 4996 )
 

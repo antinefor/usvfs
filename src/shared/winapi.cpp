@@ -24,7 +24,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "logging.h"
 #include "ntdll_declarations.h"
 #include "unicodestring.h"
-#include "scopeguard.h"
+#include "exceptionex.h"
 
 namespace ush = usvfs::shared;
 

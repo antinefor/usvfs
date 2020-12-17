@@ -6,15 +6,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\shared\windows_error.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\shared\addrtools.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\shared\debug_monitor.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\shared\directory_tree.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -27,13 +18,7 @@
     <ClCompile Include="..\src\shared\ntdll_declarations.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\shared\scopeguard.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\shared\shmlogger.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\shared\stringcast_win.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\src\shared\stringutils.cpp">
@@ -45,24 +30,18 @@
     <ClCompile Include="..\src\shared\unicodestring.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\shared\wildcard.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\shared\winapi.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\src\shared\pch.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\shared\stringcast.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\shared\addrtools.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\shared\custom_casts.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\shared\debug_monitor.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\src\shared\directory_tree.h">
@@ -77,9 +56,6 @@
     <ClInclude Include="..\src\shared\ntdll_declarations.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\shared\scopeguard.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\shared\shared_memory.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -87,12 +63,6 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\src\shared\stringcast.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\shared\stringcast_basic.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\shared\stringcast_win.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\src\shared\stringutils.h">
@@ -104,13 +74,7 @@
     <ClInclude Include="..\src\shared\unicodestring.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\shared\wildcard.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\shared\winapi.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\shared\windows_error.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\src\shared\windows_sane.h">
