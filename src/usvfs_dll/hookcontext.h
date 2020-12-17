@@ -21,6 +21,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "redirectiontree.h"
+#include "tree_container.h"
 #include "dllimport.h"
 #include "semaphore.h"
 #include <usvfsparameters.h>

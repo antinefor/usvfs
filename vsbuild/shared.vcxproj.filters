@@ -83,5 +83,8 @@
     <ClInclude Include="..\src\shared\pch.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\shared\tree_container.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "directory_tree.h"
+#include "tree_container.h"
 
 namespace usvfs::shared
 {

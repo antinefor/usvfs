@@ -160,6 +160,7 @@
     <ClInclude Include="..\src\shared\stringcast.h" />
     <ClInclude Include="..\src\shared\stringutils.h" />
     <ClInclude Include="..\src\shared\test_helpers.h" />
+    <ClInclude Include="..\src\shared\tree_container.h" />
     <ClInclude Include="..\src\shared\unicodestring.h" />
     <ClInclude Include="..\src\shared\winapi.h" />
     <ClInclude Include="..\src\shared\windows_sane.h" />
