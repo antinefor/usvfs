@@ -20,7 +20,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "redirectiontree.h"
 
-
 std::ostream &usvfs::operator<<(std::ostream &stream, const RedirectionData &data)
 {
   stream << data.linkTarget;

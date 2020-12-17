@@ -5,28 +5,12 @@
 #include "../hookcontext.h"
 #include "../hookcallcontext.h"
 #include "../maptracker.h"
-
 #include <usvfs.h>
 #include <inject.h>
 #include <winapi.h>
 #include <winbase.h>
-#include <shellapi.h>
 #include <stringutils.h>
 #include <stringcast.h>
-#include <set>
-#include <sstream>
-#include <shlwapi.h>
-#include <mutex>
-#include <shared_mutex>
-
-#if 1
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-namespace fs = boost::filesystem;
-#else
-namespace fs = std::sys;
-#include <filesystem>
-#endif
 
 namespace ush = usvfs::shared;
 using ush::string_cast;

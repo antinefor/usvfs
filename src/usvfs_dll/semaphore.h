@@ -1,9 +1,5 @@
 #pragma once
 
-
-#include <windows.h>
-
-
 // based on code by Jeff Preshing
 
 // this is a synchronization class that prefers

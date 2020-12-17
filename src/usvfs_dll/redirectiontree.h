@@ -20,16 +20,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
 
-#pragma warning (push, 3)
-#pragma warning(disable : 4714)
 #include <directory_tree.h>
-#include <boost/interprocess/containers/string.hpp>
-#include <boost/interprocess/containers/set.hpp>
-#include <boost/interprocess/allocators/allocator.hpp>
-#include <boost/interprocess/managed_windows_shared_memory.hpp>
-#include <boost/interprocess/shared_memory_object.hpp>
-#pragma warning (pop)
-
 
 namespace usvfs {
 

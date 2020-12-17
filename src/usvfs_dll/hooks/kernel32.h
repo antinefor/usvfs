@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ntdll_declarations.h"
-#include <windows_sane.h>
 #include <dllimport.h>
 
 namespace usvfs {

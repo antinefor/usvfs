@@ -6,32 +6,10 @@
 #include "../maptracker.h"
 #include "../stringcast_boost.h"
 #include <usvfs.h>
-#pragma warning(push, 3)
-#include <boost/scoped_array.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/locale.hpp>
-//#include <boost/thread/mutex.hpp>
-#pragma warning(pop)
-#include <string>
-#include <deque>
-#include <queue>
-#include <vector>
-#include <set>
-#include <map>
-#include <cstdint>
-#include <cwctype>
-#include <codecvt>
-#include <locale>
 #include <stringutils.h>
 #include <stringcast.h>
 #include <addrtools.h>
 #include <unicodestring.h>
-#include <windows.h>
-#include <fileapi.h>
-#include <mutex>
-#include <shared_mutex>
-
-#pragma warning(disable : 4996)
 
 namespace ulog = usvfs::log;
 namespace ush  = usvfs::shared;
