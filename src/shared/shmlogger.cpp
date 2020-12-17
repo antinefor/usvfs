@@ -22,14 +22,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #pragma warning(disable : 4503)
 #pragma warning(push, 3)
 #include "shmlogger.h"
-#include <boost/interprocess/ipc/message_queue.hpp>
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <limits>
-#include <algorithm>
-#include <ShlObj.h>
-#include <comutil.h>
 #pragma warning(pop)
 
 #pragma warning(disable : 4996)

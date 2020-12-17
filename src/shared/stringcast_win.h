@@ -24,7 +24,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "stringutils.h"
 #include "windows_error.h"
 #include "logging.h"
-#include <type_traits>
 
 namespace usvfs {
 namespace shared {

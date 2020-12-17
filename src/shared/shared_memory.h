@@ -21,19 +21,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include <boost/predef.h>
-
-#ifdef BOOST_OS_WINDOWS
-#include <boost/interprocess/managed_windows_shared_memory.hpp>
-//#include <boost/interprocess/managed_shared_memory.hpp>
-#else // BOOST_OS_WINDOWS
-#include <boost/interprocess/managed_shared_memory.hpp>
-#endif // BOOST_OS_WINDOWS
-#include <boost/interprocess/containers/string.hpp>
-#include <boost/container/scoped_allocator.hpp>
-#include <boost/interprocess/offset_ptr.hpp>
-#include <cstdint>
-
 namespace bi = boost::interprocess;
 
 

@@ -25,29 +25,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "scopeguard.h"
 #include "logging.h"
 #include "stringutils.h"
-#include <boost/predef.h>
-#include <boost/lexical_cast.hpp>
-#include <boost/format.hpp>
 #include "exceptionex.h"
-#include <boost/interprocess/containers/string.hpp>
-#include <boost/interprocess/containers/map.hpp>
-#include <boost/interprocess/containers/vector.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/interprocess/smart_ptr/shared_ptr.hpp>
-#include <boost/interprocess/smart_ptr/weak_ptr.hpp>
-#include <boost/interprocess/smart_ptr/deleter.hpp>
-#include <boost/interprocess/sync/named_mutex.hpp>
-#include <map>
-#include <memory>
-#include <regex>
-#include <functional>
-#include <iomanip>
-#include <memory>
-#include <cstdint>
-#include <codecvt>
-#include <spdlog.h>
 
 namespace fs = boost::filesystem;
 #include <boost/filesystem.hpp>

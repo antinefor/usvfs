@@ -19,12 +19,6 @@ You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "stringutils.h"
-#include <cstring>
-#include <iomanip>
-#include <sstream>
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/locale.hpp>
 #include "windows_sane.h"
 #include "windows_error.h"
 

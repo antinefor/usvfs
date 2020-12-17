@@ -20,17 +20,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
 
-#include <string>
-#include <ios>
-
-#if 1
-#include <boost/filesystem.hpp>
-namespace fs = boost::filesystem;
-#else
-#include <filesystem>
-namespace fs = std::tr2::sys;
-#endif
-
 namespace usvfs {
 
 namespace shared {

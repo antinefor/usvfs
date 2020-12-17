@@ -25,19 +25,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "logging.h"
 #include "stringcast_win.h"
 
-#include <string>
-#include <memory>
-#include <type_traits>
-#include <exception>
-#include <vector>
-#include <limits>
-#include <sstream>
-#include <utility>
-#include <shlobj.h>
-
-#include <boost/filesystem.hpp>
-
-
 #define ALIAS(alias, original) template <typename... Args>\
     auto alias(Args&&... args) -> decltype(original(std::forward<Args>(args)...)) {\
       return original(std::forward<Args>(args)...);\

@@ -21,11 +21,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "wildcard.h"
 #include "windows_sane.h"
 #include "logging.h"
-#include <string>
-#include <cstring>
-
-
-
 
 bool IsInnerMatch(LPCWSTR pszString, LPCWSTR pszMatch)
 {

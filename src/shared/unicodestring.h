@@ -20,13 +20,8 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
 
-#include <sstream>
-#include <vector>
 #include "windows_sane.h"
 #include "ntdll_declarations.h"
-#include <cassert>
-#include <string>
-
 
 namespace usvfs {
 

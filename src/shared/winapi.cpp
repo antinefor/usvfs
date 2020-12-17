@@ -25,11 +25,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "ntdll_declarations.h"
 #include "unicodestring.h"
 #include "scopeguard.h"
-#include <Psapi.h>
-#include <algorithm>
-#include <spdlog.h>
-#include <fmt/format.h>
-
 
 namespace ush = usvfs::shared;
 
