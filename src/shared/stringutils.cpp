@@ -21,9 +21,10 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "stringutils.h"
 #include "windows_sane.h"
 
-#pragma warning ( disable : 4996 )
+namespace usvfs::shared
+{
 
-void usvfs::shared::strncpy_sz(char *dest, const char *src, size_t destSize)
+void strncpy_sz(char *dest, const char *src, size_t destSize)
 {
   if (destSize > 0) {
     strncpy(dest, src, destSize - 1);
@@ -31,7 +32,7 @@ void usvfs::shared::strncpy_sz(char *dest, const char *src, size_t destSize)
   }
 }
 
-void usvfs::shared::wcsncpy_sz(wchar_t *dest, const wchar_t *src, size_t destSize)
+void wcsncpy_sz(wchar_t *dest, const wchar_t *src, size_t destSize)
 {
   if ((destSize > 0) && (dest != nullptr)) {
     wcsncpy(dest, src, destSize - 1);
@@ -40,7 +41,7 @@ void usvfs::shared::wcsncpy_sz(wchar_t *dest, const wchar_t *src, size_t destSiz
 }
 
 
-bool usvfs::shared::startswith(const wchar_t *string, const wchar_t *subString)
+bool startswith(const wchar_t *string, const wchar_t *subString)
 {
   while ((*string != '\0') && (*subString != '\0')) {
     if (towlower(*string) != towlower(*subString)) {
@@ -69,8 +70,8 @@ static fs::path normalize(const fs::path &path)
   return result;
 }
 
-fs::path usvfs::shared::make_relative(const fs::path &fromIn,
-                                      const fs::path &toIn) {
+fs::path make_relative(const fs::path &fromIn, const fs::path &toIn)
+{
   // converting path to lower case to make iterator comparison work correctly
   // on case-insenstive filesystems
   fs::path from(fs::absolute(fromIn));
@@ -104,7 +105,7 @@ fs::path usvfs::shared::make_relative(const fs::path &fromIn,
   return result;
 }
 
-std::string usvfs::shared::to_hex(void *bufferIn, size_t bufferSize)
+std::string to_hex(void *bufferIn, size_t bufferSize)
 {
   unsigned char *buffer = static_cast<unsigned char *>(bufferIn);
   std::ostringstream temp;
@@ -120,7 +121,8 @@ std::string usvfs::shared::to_hex(void *bufferIn, size_t bufferSize)
   return temp.str();
 }
 
-std::wstring usvfs::shared::to_upper(const std::wstring &input) {
+std::wstring to_upper(const std::wstring &input)
+{
   std::wstring result;
   result.resize(input.size());
   ::LCMapStringW(LOCALE_INVARIANT, LCMAP_UPPERCASE, input.c_str(),
@@ -128,3 +130,5 @@ std::wstring usvfs::shared::to_upper(const std::wstring &input) {
                  static_cast<int>(result.size()));
   return result;
 }
+
+} // namespace

@@ -26,63 +26,67 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 
 typedef boost::interprocess::message_queue_t<usvfs::shared::VoidPointerT> message_queue_interop;
 
-namespace spdlog {
-namespace sinks {
-class shm_sink : public sink {
-  message_queue_interop m_LogQueue;
+namespace spdlog::sinks
+{
 
-  std::atomic<int> m_DroppedMessages;
-
+class shm_sink : public sink
+{
 public:
   shm_sink(const char *queueName);
-  virtual void log(const details::log_msg &msg) override;
+
+  void log(const details::log_msg &msg) override;
   void output(level::level_enum lev, const std::string &message);
-  virtual void flush() override;
+  void flush() override;
+
+private:
+  message_queue_interop m_LogQueue;
+  std::atomic<int> m_DroppedMessages;
 };
-}
-}
+
+} // namespace
 
 
-class SHMLogger {
-
+class SHMLogger
+{
 public:
   static const size_t MESSAGE_COUNT = 1024;
   static const size_t MESSAGE_SIZE  = 512;
 
-public:
   static SHMLogger &create(const char *instanceName);
   static SHMLogger &open(const char *instanceName);
   static void free();
 
-  static bool isInstantiated() {
+  static bool isInstantiated()
+  {
     return s_Instance != nullptr;
   }
 
-  static inline SHMLogger &instance() {
+  static inline SHMLogger &instance()
+  {
     if (s_Instance == nullptr) {
       throw std::runtime_error("shm logger not instantiated");
     }
+
     return *s_Instance;
   }
 
   void log(LogLevel logLevel, const std::string &message);
-
   bool tryGet(char *buffer, size_t bufferSize);
   void get(char *buffer, size_t bufferSize);
 
 private:
-  static struct owner_t {
-  } owner;
-  static struct client_t {
-  } client;
+  struct owner_t {};
+  static owner_t owner;
+
+  struct client_t {};
+  static client_t client;
 
 private:
   SHMLogger(owner_t, const std::string &instanceName);
   SHMLogger(client_t, const std::string &instanceName);
 
-  // not implemented
-  SHMLogger(const SHMLogger &reference);
-  SHMLogger &operator=(const SHMLogger &reference);
+  SHMLogger(const SHMLogger&) = delete;
+  SHMLogger &operator=(const SHMLogger&) = delete;
 
   ~SHMLogger();
 

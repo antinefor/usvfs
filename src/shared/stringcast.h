@@ -22,17 +22,19 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 
 #include "exceptionex.h"
 
-namespace usvfs {
-namespace shared {
+namespace usvfs::shared
+{
 
-enum class CodePage {
+enum class CodePage
+{
   LOCAL,
   LATIN1,
   UTF8
 };
 
 template <typename ToT, typename FromT>
-class string_cast_impl {
+class string_cast_impl
+{
 public:
   static ToT cast(const FromT &source, CodePage codePage, size_t sourceLength);
 };
@@ -47,7 +49,8 @@ ToT string_cast(FromT source
 
 
 template <typename ToT, typename CharT>
-class string_cast_impl<ToT, std::basic_string<CharT>> {
+class string_cast_impl<ToT, std::basic_string<CharT>>
+{
 public:
   static ToT cast(const std::basic_string<CharT> &source, CodePage codePage, size_t sourceLength)
   {
@@ -56,8 +59,10 @@ public:
 };
 
 template <typename ToT, typename CharT>
-class string_cast_impl<ToT, CharT*> {
+class string_cast_impl<ToT, CharT*>
+{
   BOOST_STATIC_ASSERT(!boost::is_base_and_derived<ToT, CharT>::value);
+
 public:
   static ToT cast(CharT *source, CodePage codePage, size_t sourceLength)
   {
@@ -67,7 +72,8 @@ public:
 
 
 template <typename ToT, typename CharT, int N>
-class string_cast_impl<ToT, CharT[N]> {
+class string_cast_impl<ToT, CharT[N]>
+{
 public:
   static ToT cast(CharT(&source)[N], CodePage codePage, size_t sourceLength)
   {
@@ -77,8 +83,10 @@ public:
 
 UINT windowsCP(CodePage codePage);
 
+
 template <>
-class string_cast_impl<std::string, const wchar_t*> {
+class string_cast_impl<std::string, const wchar_t*>
+{
 public:
   static std::string cast(const wchar_t * const &source, CodePage codePage, size_t sourceLength)
   {
@@ -115,14 +123,17 @@ public:
 
 
 template <>
-class string_cast_impl<std::wstring, const char*> {
+class string_cast_impl<std::wstring, const char*>
+{
 public:
-  static std::wstring cast(const char * const &source, CodePage codePage, size_t sourceLength) {
+  static std::wstring cast(const char * const &source, CodePage codePage, size_t sourceLength)
+  {
     std::wstring result;
 
     if (sourceLength == std::numeric_limits<size_t>::max()) {
       sourceLength = strlen(source);
     }
+
     if (sourceLength > 0) {
       // use utf8 or local 8-bit encoding depending on user choice
       UINT cp = windowsCP(codePage);
@@ -146,12 +157,13 @@ public:
 };
 
 template <>
-class string_cast_impl<std::wstring, const wchar_t*> {
+class string_cast_impl<std::wstring, const wchar_t*>
+{
 public:
-  static std::wstring cast(const wchar_t * const &source, CodePage, size_t) {
+  static std::wstring cast(const wchar_t * const &source, CodePage, size_t)
+  {
     return std::wstring(source);
   }
 };
 
-}
-}
+} // namespace

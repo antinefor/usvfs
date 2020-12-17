@@ -330,13 +330,6 @@ extern RtlReleaseRelativeName_type RtlReleaseRelativeName;
 extern RtlGetVersion_type RtlGetVersion;
 extern NtTerminateProcess_type NtTerminateProcess;
 
-/*
-extern ObReferenceObjectByHandle_type ObReferenceObjectByHandle;
-extern ObQueryNameString_type ObQueryNameString;
-extern ObDereferenceObject_type ObDereferenceObject;
-extern RtlInitUnicodeString_type RtlInitUnicodeString;
-*/
-
 // ensures ntdll functions have been initialized (only needed during static objects initialization)
 void ntdll_declarations_init();
 

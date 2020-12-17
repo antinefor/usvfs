@@ -22,17 +22,19 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "stringcast.h"
 #include "stringutils.h"
 
-
 namespace ush = usvfs::shared;
 
-std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<DWORD> &value)
+namespace usvfs::log
+{
+
+std::ostream& operator<<(std::ostream &os, const Wrap<DWORD> &value)
 {
   ush::FormatGuard guard(os);
   os << std::hex << value.data();
   return os;
 }
 
-std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<NTSTATUS> &status)
+std::ostream& operator<<(std::ostream &os, const Wrap<NTSTATUS> &status)
 {
   switch (status.data()) {
     case 0x00000000: {
@@ -53,7 +55,7 @@ std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<NTSTATUS> &sta
 }
 
 
-std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<PUNICODE_STRING> &str)
+std::ostream& operator<<(std::ostream &os, const Wrap<PUNICODE_STRING> &str)
 {
   try {
     // TODO this does not correctly support surrogate pairs since the size used here
@@ -93,7 +95,7 @@ static void writeToStream(std::ostream &os, LPCWSTR str)
   }
 }
 
-std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<LPSTR> &str)
+std::ostream& operator<<(std::ostream &os, const Wrap<LPSTR> &str)
 {
   try {
     writeToStream(os, str.data());
@@ -105,7 +107,7 @@ std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<LPSTR> &str)
   return os;
 }
 
-std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<LPCSTR> &str)
+std::ostream& operator<<(std::ostream &os, const Wrap<LPCSTR> &str)
 {
   try {
     writeToStream(os, str.data());
@@ -117,7 +119,7 @@ std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<LPCSTR> &str)
   return os;
 }
 
-std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<LPWSTR> &str)
+std::ostream& operator<<(std::ostream &os, const Wrap<LPWSTR> &str)
 {
   try {
     writeToStream(os, str.data());
@@ -129,7 +131,7 @@ std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<LPWSTR> &str)
 }
 
 
-std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<LPCWSTR> &str)
+std::ostream& operator<<(std::ostream &os, const Wrap<LPCWSTR> &str)
 {
   try {
     writeToStream(os, str.data());
@@ -140,7 +142,7 @@ std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<LPCWSTR> &str)
   return os;
 }
 
-std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<std::wstring> &str)
+std::ostream& operator<<(std::ostream &os, const Wrap<std::wstring> &str)
 {
   try {
     // TODO this does not correctly support surrogate pairs since the size used here
@@ -155,7 +157,7 @@ std::ostream &usvfs::log::operator<<(std::ostream &os, const Wrap<std::wstring> 
   return os;
 }
 
-spdlog::level::level_enum usvfs::log::ConvertLogLevel(LogLevel level)
+spdlog::level::level_enum ConvertLogLevel(LogLevel level)
 {
   switch (level) {
     case LogLevel::Debug: return spdlog::level::debug;
@@ -166,7 +168,7 @@ spdlog::level::level_enum usvfs::log::ConvertLogLevel(LogLevel level)
   }
 }
 
-LogLevel usvfs::log::ConvertLogLevel(spdlog::level::level_enum level)
+LogLevel ConvertLogLevel(spdlog::level::level_enum level)
 {
   switch (level) {
     case spdlog::level::debug: return LogLevel::Debug;
@@ -177,7 +179,13 @@ LogLevel usvfs::log::ConvertLogLevel(spdlog::level::level_enum level)
   }
 }
 
-std::ostream &std::operator<<(ostream &os, LPCWSTR str)
+} // namespace
+
+
+namespace std
+{
+
+std::ostream& operator<<(ostream &os, LPCWSTR str)
 {
 
   try {
@@ -200,7 +208,7 @@ std::ostream &std::operator<<(ostream &os, LPCWSTR str)
   return os;
 }
 
-std::ostream &std::operator<<(ostream &os, const wstring &str)
+std::ostream& operator<<(ostream &os, const wstring &str)
 {
   try {
     os << ush::string_cast<string>(str, ush::CodePage::UTF8);
@@ -212,7 +220,7 @@ std::ostream &std::operator<<(ostream &os, const wstring &str)
   return os;
 }
 
-std::ostream &std::operator<<(ostream &os, LPWSTR str)
+std::ostream& operator<<(ostream &os, LPWSTR str)
 {
   try {
     // TODO this does not correctly support surrogate pairs since the size used here
@@ -233,3 +241,4 @@ std::ostream &std::operator<<(ostream &os, LPWSTR str)
   return os;
 }
 
+}  // namespace

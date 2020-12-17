@@ -52,16 +52,20 @@ std::string windows_error::constructMessage(const std::string& input, int inErro
 } // namespace
 
 
-void logExtInfo(const std::exception &e, LogLevel logLevel) {
+void logExtInfo(const std::exception &e, LogLevel logLevel)
+{
   std::string content;
-  if (const std::string *msg = MyBoost::get_error_info<ex_msg>(e)) {
+
+  if (const std::string *msg = boost::get_error_info<ex_msg>(e)) {
     content = *msg;
   }
-  if (const DWORD *errorCode = MyBoost::get_error_info<ex_win_errcode>(e)) {
+
+  if (const DWORD *errorCode = boost::get_error_info<ex_win_errcode>(e)) {
     content = std::string("error: ") + winapi::ex::ansi::errorString(*errorCode);
   }
 
-  switch (logLevel) {
+  switch (logLevel)
+  {
     case LogLevel::Debug:    spdlog::get("usvfs")->debug(content); break;
     case LogLevel::Info:     spdlog::get("usvfs")->info(content); break;
     case LogLevel::Warning:  spdlog::get("usvfs")->warn(content); break;

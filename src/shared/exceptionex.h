@@ -24,50 +24,14 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/exception/all.hpp>
 #include <stdexcept>
 
-/*
-namespace MyBoostFake
+typedef boost::error_info<struct tag_message, DWORD> ex_win_errcode;
+typedef boost::error_info<struct tag_message, std::string> ex_msg;
+
+struct std_boost_exception : virtual boost::exception, virtual std::exception
 {
-  struct error_base
+  const char* what() const noexcept override
   {
-  };
-
-  template <typename TagT, typename ValueT>
-  struct error_info : error_base
-  {
-    typedef ValueT value_type;
-    error_info(const ValueT&) {}
-  };
-
-  class exception : virtual std::exception
-  {
-  };
-
-  template <class ExceptionT, class TagT, typename ValueT>
-  const ExceptionT &operator<<(const ExceptionT &ex, const error_info<TagT, ValueT> &val) {
-    return ex;
-  }
-
-  template <class InfoT, class ExceptionT>
-  typename InfoT::value_type *get_error_info(const ExceptionT &ex) {
-    static InfoT::value_type def;
-    return &def;
-  }
-
-}
-
-namespace MyBoost = MyBoostFake;
-*/
-namespace MyBoost = boost;
-
-//#ifdef _MSC_VER
-typedef MyBoost::error_info<struct tag_message, DWORD> ex_win_errcode;
-//#endif // _MSC_VER
-typedef MyBoost::error_info<struct tag_message, std::string> ex_msg;
-
-struct std_boost_exception : virtual MyBoost::exception, virtual std::exception
-{
-  const char* what() const noexcept override {
-    return MyBoost::diagnostic_information_what(*this);
+    return boost::diagnostic_information_what(*this);
   }
 };
 
@@ -79,18 +43,7 @@ struct timeout_error : std_boost_exception {};
 struct unknown_error : std_boost_exception {};
 struct node_missing_error : std_boost_exception {};
 
-
-
 #define USVFS_THROW_EXCEPTION(x) BOOST_THROW_EXCEPTION(x)
-
-#ifdef BOOST_NO_EXCEPTIONS
-namespace boost
-{
-inline void throw_exception(const std::exception &e) {
-  throw e;
-}
-}
-#endif
 
 void logExtInfo(const std::exception &e, LogLevel logLevel = LogLevel::Warning);
 
@@ -98,16 +51,23 @@ void logExtInfo(const std::exception &e, LogLevel logLevel = LogLevel::Warning);
 namespace usvfs::shared
 {
 
-class windows_error : public std::runtime_error {
+class windows_error : public std::runtime_error
+{
 public:
   windows_error(const std::string& message, int errorcode = GetLastError())
     : runtime_error(constructMessage(message, errorcode)), m_ErrorCode(errorcode)
-  {}
-  int getErrorCode() const { return m_ErrorCode; }
-private:
-  std::string constructMessage(const std::string& input, int errorcode);
+  {
+  }
+
+  int getErrorCode() const
+  {
+    return m_ErrorCode;
+  }
+
 private:
   int m_ErrorCode;
+
+  std::string constructMessage(const std::string& input, int errorcode);
 };
 
 

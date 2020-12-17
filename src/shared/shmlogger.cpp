@@ -26,8 +26,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma warning(disable : 4996)
 
-#pragma comment(lib, "comsuppw")
-
 using namespace boost::interprocess;
 
 SHMLogger *SHMLogger::s_Instance = nullptr;
@@ -117,6 +115,7 @@ void SHMLogger::get(char *buffer, size_t bufferSize)
                      receivedSize, prio);
   buffer[std::min(bufferSize - 1, static_cast<size_t>(receivedSize))] = '\0';
 }
+
 
 spdlog::sinks::shm_sink::shm_sink(const char *queueName)
   : m_LogQueue(open_only, (std::string("__shm_sink_") + queueName).c_str()), m_DroppedMessages(0)

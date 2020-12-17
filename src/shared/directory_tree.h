@@ -25,11 +25,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "stringutils.h"
 #include "exceptionex.h"
 
-namespace fs = boost::filesystem;
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/detail/utf8_codecvt_facet.hpp>
-
-
 // simplify unit tests by allowing access to private members
 #ifndef PRIVATE
 #define PRIVATE private

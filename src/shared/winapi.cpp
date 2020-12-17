@@ -26,16 +26,13 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "unicodestring.h"
 #include "exceptionex.h"
 
-namespace ush = usvfs::shared;
-
-namespace winapi {
-
-namespace ansi {
+namespace winapi::ansi
+{
 
 std::string getModuleFileName(HMODULE module, HANDLE process)
 {
   std::wstring result = wide::getModuleFileName(module, process);
-  return ush::string_cast<std::string>(result);
+  return usvfs::shared::string_cast<std::string>(result);
 }
 
 std::string getCurrentDirectory()
@@ -70,9 +67,11 @@ std::pair<std::string, std::string> getFullPathName(LPCSTR fileName)
   }
 }
 
-}
+} // namespace
 
-namespace wide {
+
+namespace winapi::wide
+{
 
 std::wstring getModuleFileName(HMODULE module, HANDLE process)
 {
@@ -150,9 +149,11 @@ std::wstring getKnownFolderPath(REFKNOWNFOLDERID folderID)
   return std::wstring(writablePath);
 }
 
-}
+} // namespace
 
-namespace ex {
+
+namespace winapi::ex
+{
 
 std::pair<uintptr_t, uintptr_t> getSectionRange(HANDLE moduleHandle)
 {
@@ -205,7 +206,11 @@ OSVersion getOSVersion()
   return result;
 }
 
-namespace ansi {
+} // namespace
+
+
+namespace winapi::ex::ansi
+{
 
 std::string errorString(DWORD errorCode)
 {
@@ -268,9 +273,11 @@ LPCSTR GetBaseName(LPCSTR string)
   return result;
 }
 
-}
+} // namespace
 
-namespace wide {
+
+namespace winapi::ex::wide
+{
 
 bool fileExists(LPCWSTR fileName, bool *isDirectory)
 {
@@ -482,8 +489,4 @@ std::wstring getWindowsBuildLab(bool ex)
   return std::wstring(buf, size);
 }
 
-}
-
-}
-
-}
+} // namespace

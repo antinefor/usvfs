@@ -22,9 +22,8 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 
 #include "windows_sane.h"
 
-namespace usvfs {
-
-namespace shared {
+namespace usvfs::shared
+{
 
 #ifdef _M_AMD64
 typedef DWORD64 REGWORD;
@@ -32,12 +31,10 @@ typedef DWORD64 REGWORD;
 typedef DWORD REGWORD;
 #endif
 
-
 inline LPVOID AddrAdd(LPVOID address, size_t offset)
 {
   return reinterpret_cast<LPVOID>(reinterpret_cast<LPBYTE>(address) + offset);
 }
-
 
 inline std::ptrdiff_t AddrDiff(LPVOID lhs, LPVOID rhs)
 {
@@ -45,8 +42,8 @@ inline std::ptrdiff_t AddrDiff(LPVOID lhs, LPVOID rhs)
 }
 
 
-/// implicitly cast pointer to void*, from there cast to target type.
-/// This is supposed to be safer than directly reinterpret-casting
+// implicitly cast pointer to void*, from there cast to target type.
+// This is supposed to be safer than directly reinterpret-casting
 template <typename T>
 inline T void_ptr_cast(void *ptr)
 {
@@ -63,7 +60,4 @@ inline uint64_t void_ptr_cast(void *ptr) {
   return reinterpret_cast<uint64_t>(ptr);
 }
 
-
-} // namespace shared
-
-} // namespace usvfs
+} // namespace

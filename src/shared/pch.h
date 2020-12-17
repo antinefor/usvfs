@@ -76,6 +76,8 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/locale.hpp>
+#include <boost/current_function.hpp>
+#include <boost/filesystem/detail/utf8_codecvt_facet.hpp>
 
 #include <fmt/ostr.h>
 #include <spdlog.h>

@@ -20,8 +20,10 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "stringcast.h"
 
+namespace usvfs::shared
+{
 
-UINT usvfs::shared::windowsCP(CodePage codePage)
+UINT windowsCP(CodePage codePage)
 {
   switch (codePage) {
     case CodePage::LOCAL:  return CP_ACP;
@@ -31,3 +33,5 @@ UINT usvfs::shared::windowsCP(CodePage codePage)
   // this should not be possible in practice
   throw std::runtime_error("unsupported codePage");
 }
+
+} // namespace
