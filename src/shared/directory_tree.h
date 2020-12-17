@@ -433,7 +433,7 @@ public:
   const_file_iterator filesEnd() const { return m_Nodes.end(); }
 
   /**
-   * @brief erase the leaf at the specfied iterator
+   * @brief erase the leaf at the specified iterator
    * @return an iterator to the following file
    **/
   file_iterator erase(file_iterator iter) { return m_Nodes.erase(iter); }
@@ -453,7 +453,7 @@ public:
         par->erase(self);
       }
       else {
-        //trying to remove a node that des not exist, most likely because it was already removed in a lower level call. 
+        //trying to remove a node that does not exist, most likely because it was already removed in a lower level call.
         //this is known to happen when MoveFile has the MOVEFILE_COPY_ALLOWED flag and moving a mapped file.
         spdlog::get("usvfs")->warn("Failed to remove inexisting node from tree: {}", m_Name.c_str());
       }
@@ -607,7 +607,8 @@ public:
       m_SHMName += "_1";
     }
 
-    m_TreeMeta = createOrOpen(m_SHMName.c_str(), size);
+    createOrOpen(m_SHMName.c_str(), size);
+
     spdlog::get("usvfs")->info("attached to {0} with {1} nodes, size {2}",
                                m_SHMName, m_TreeMeta->tree->numNodesRecursive(),
                                m_SHM->get_size());
@@ -624,7 +625,7 @@ public:
   }
 
   /**
-   * @return retrieve an allocater that can be used to create objects in this tree
+   * @return retrieve an allocator that can be used to create objects in this tree
    */
   VoidAllocatorT allocator() {
     return VoidAllocatorT(m_SHM->get_segment_manager());
@@ -849,12 +850,12 @@ private:
     return --treeMeta->referenceCount;
   }
 
-  TreeMeta *createOrOpen(const char *SHMName, size_t size)
+  // see activateSHM() for return value
+  //
+  std::optional<std::string> createOrOpen(const char *SHMName, size_t size)
   {
-//    bi::named_mutex mutex(bi::open_or_create, LockName);
-//    bi::scoped_lock<bi::named_mutex> lock(mutex, boost::get_system_time() + boost::posix_time::seconds(1));
-
     SharedMemoryT *newSHM;
+
     try {
       newSHM = new SharedMemoryT(bi::open_only, SHMName);
       spdlog::get("usvfs")->info("{} opened in process {}",
@@ -864,16 +865,24 @@ private:
       spdlog::get("usvfs")->info("{} created in process {}",
                                  SHMName, ::GetCurrentProcessId());
     }
+
     return activateSHM(newSHM, SHMName);
   }
 
-  TreeMeta *activateSHM(SharedMemoryT *shm, const char *SHMName)
+  // makes the given shm current, returns the name of the previous shm block
+  // if it is now unused and must be destroyed; if the block is still used by
+  // another process, returns empty
+  //
+  // see reassign()
+  //
+  std::optional<std::string> activateSHM(SharedMemoryT *shm, const char *SHMName)
   {
     std::shared_ptr<SharedMemoryT> oldSHM = m_SHM;
 
     m_SHM.reset(shm);
     std::pair<TreeMeta*, SharedMemoryT::size_type> res = m_SHM->find<TreeMeta>("Meta");
     bool lastUser = false;
+
     if (res.first == nullptr) {
       res.first = m_SHM->construct<TreeMeta>("Meta")(createEmpty(), m_SHM->get_segment_manager());
       if (res.first == nullptr) {
@@ -883,20 +892,22 @@ private:
         copyTree(res.first->tree.get(), m_TreeMeta->tree.get());
       }
     }
+
     increaseRefCount(res.first);
 
+    std::optional<std::string> deadSHMName;
+
     if (oldSHM.get() != nullptr) {
-      lastUser = unassign(oldSHM, m_TreeMeta);
+      const bool lastUser = unassign(oldSHM, m_TreeMeta);
+      if (lastUser) {
+        deadSHMName = m_SHMName;
+      }
     }
 
-    if (lastUser) {
-      // remove the !old! shm
-      bi::shared_memory_object::remove(m_SHMName.c_str());
-    }
-
+    m_TreeMeta = res.first;
     m_SHMName = SHMName;
 
-    return res.first;
+    return deadSHMName;
   }
 
   std::string followupName() const
@@ -926,26 +937,122 @@ private:
     }
   }
 
+  // ====
+  // careful: reassign() is re-entrant, see the part about destroying blocks at
+  // the bottom of this comment
+  // ====
+  //
+  //
+  // reassign() is called from a variety of places above when the current chunk
+  // of shared memory is full or is marked as being outdated; its job is to
+  // either find another chunk that may have been created by another process
+  // or to create a brand new one
+  //
+  //
+  // if there is only a single process hooked, it will slowly fill up the shared
+  // memory when adding files, eventually throw a bi::bad_alloc and end up here;
+  // followupName() will return a new, unused name for the shared memory and
+  // createOrOpen() will create it and copy the old data to it
+  //
+  // because there is only one process, the old shared memory will be considered
+  // unused and createOrOpen() will return the name of the old, now dead shared
+  // memory object, which will be deleted at the end of reassign()
+  //
+  //
+  // when multiple processes are involved, things are more complicated
+  //
+  // two processes A and B will start by using the same shared memory, but they
+  // have their own pointer to it that's local to the process (the `m_TreeMeta`
+  // member variable)
+  //
+  // so when process A fills up the shared memory and reallocates it, process B
+  // is still pointing to the old shared memory; only when process B does some
+  // operation that accesses the file tree will the pointer be checked and
+  // adjusted to point to the new shared memory
+  //
+  // in this example, when process A ran out of memory, it set `outdated` to
+  // `true` in the shared memory block, allocated a new one and copied the data
+  // over, but it did not deallocate the block because process B is still
+  // pointing to it
+  //
+  // when process B tries to access the block, it checks `outdated` (see get()
+  // way above); if it's true, it means that it's pointing to an outdated shared
+  // memory block and must find the new one that process A created
+  //
+  //
+  // todo, bug: process A may have created _multiple_ shared memory blocks by
+  // the time reassign() is called in process B, but all of these blocks except
+  // the last one may have already been deallocated, so process B will end up
+  // creating a new block in between
+  //
+  // blocks should only be deallocated when all the blocks _below_ it are unused
+  //
+  //
+  // re-entrancy: every time a process switches to a new shared memory block, it
+  // will know whether it was the last process to have a handle to it; when that
+  // happens, the block will be destroyed to avoid leaking it
+  //
+  // destroying these blocks is somewhat dangerous: it ends up in boost, which
+  // will try to access the filesystem to see if the name of the shared memory
+  // corresponds to a file on the drive, which can call hooked functions and end
+  // up right back here
+  //
+  // (note that in usvfs, only the shared memory for the log file uses a real
+  // file on the filesystem, see shmlogger.cpp; all the tree stuff uses
+  // anonymous, memory mapped files that live in the Windows pagefile)
+  //
+  // so the old blocks can be destroyed, but only after all the shenanigans with
+  // finding the correct shared memory block are over and `m_TreeMeta` points to
+  // a valid block, so all the names of the dead shared memory blocks are kept
+  // in a vector and deallocated at the very end
+  //
   void reassign() const
   {
-    // TODO evil const cast. We need to be able to reassign, even if the user only
-    // has a read-lock on the tree because another process might have invalidated it.
-    // This is not the solution
+    // safe const_cast, TreeContainer are never created const
     auto *self = const_cast<TreeContainer<TreeT>*>(this);
 
+    // reassign() was called because the block is full, in which case a new one
+    // will be created and the current one becomes outdated
+    //
+    // reassign() can also be called because `outdated` was already true
     self->m_TreeMeta->outdated = true;
 
-    for (;;) {
-      std::string nextName = followupName();
-      self->m_TreeMeta = self->createOrOpen(nextName.c_str(),
-                                            m_SHM->get_size() * 2);
+    // list of all the shared memory blocks that are now unused and can be
+    // destroyed
+    std::vector<std::string> deadSHMNames;
 
+    for (;;) {
+      // the shm name is something like "mod_organizer_3", which becomes
+      // "mod_organizer_4"
+      const std::string nextName = followupName();
+
+      // this creates the new block if it doesn't exist or open it if it does
+      const auto deadSHMName = self->createOrOpen(
+        nextName.c_str(), m_SHM->get_size() * 2);
+
+      // if this process was the last user of the previous block, it must be
+      // deallocated, but only after this whole thing is finished, because it
+      // can end up calling reassign() again
+      if (deadSHMName) {
+        deadSHMNames.push_back(*deadSHMName);
+      }
+
+      // another process might have already created this block, run out of
+      // memory and created more, so make sure to only stop when finding a block
+      // that's not outdated
       if (!m_TreeMeta->outdated) {
         break;
       }
     }
-    spdlog::get("usvfs")->info("tree {0} size now {1} bytes",
-                               m_SHMName, m_SHM->get_size());
+
+    spdlog::get("usvfs")->info(
+      "tree {0} size now {1} bytes", m_SHMName, m_SHM->get_size());
+
+    // remove the old shared memory blocks; this can be recursive and call
+    // reassign() again, but it's safe at this point
+    for (const std::string& name : deadSHMNames) {
+      bi::shared_memory_object::remove(name.c_str());
+    }
   }
 
 private:
