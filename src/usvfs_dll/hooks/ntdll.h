@@ -1,9 +1,6 @@
 #pragma once
 
 #include <ntdll_declarations.h>
-#include <windows_sane.h>
-#include <sstream>
-#include <vector>
 #include <dllimport.h>
 #include <loghelpers.h>
 

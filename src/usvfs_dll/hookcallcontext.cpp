@@ -19,14 +19,11 @@ You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "hookcallcontext.h"
-#include <boost/thread.hpp>
 #include <logging.h>
-#include <bitset>
-#include <thread>
 #include "hookcontext.h"
 
-
-namespace usvfs {
+namespace usvfs
+{
 
 class HookStack {
 public:

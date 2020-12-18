@@ -24,29 +24,15 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "usvfsparametersprivate.h"
 #include "redirectiontree.h"
 #include "loghelpers.h"
-#include <DbgHelp.h>
-#include <ctime>
 #include <shmlogger.h>
 #include <winapi.h>
-#include <boost/format.hpp>
-#include <boost/tokenizer.hpp>
-#include <boost/locale.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/dll/runtime_symbol_info.hpp>
 #include <ttrampolinepool.h>
-#include <scopeguard.h>
 #include <stringcast.h>
 #include <inject.h>
-#include <spdlog.h>
-#pragma warning (push, 3)
-#include <boost/filesystem.hpp>
-#pragma warning (pop)
-#include <fmt/format.h>
-#include <codecvt>
-#include <stdio.h>
-#include <Psapi.h>
-#include <filesystem>
 
+// note that there's a mix of boost and std filesystem stuff in this file and
+// that they're not completely compatible
+#include <filesystem>
 
 namespace bfs = boost::filesystem;
 namespace ush = usvfs::shared;

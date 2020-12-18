@@ -20,12 +20,8 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
 
-#include "windows_sane.h"
-
-#include <vector>
-
-
-namespace usvfs {
+namespace usvfs
+{
 
 /**
  * @brief groups of hooks which may be used to implement each other, so only the first call should be

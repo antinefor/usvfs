@@ -21,6 +21,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "redirectiontree.h"
+#include "tree_container.h"
 #include "dllimport.h"
 #include "semaphore.h"
 #include <usvfsparameters.h>
@@ -28,14 +29,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include <directory_tree.h>
 #include <exceptionex.h>
 #include <winapi.h>
-#include <boost/any.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/thread/shared_mutex.hpp>
-#include <boost/thread/shared_lock_guard.hpp>
-#include <memory>
-#include <set>
-#include <future>
-#include <windows_sane.h>
 
 namespace usvfs
 {

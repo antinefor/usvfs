@@ -20,16 +20,8 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
 
-#include <cstdint>
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
-#undef ERROR
-
-enum class LogLevel : uint8_t {
+enum class LogLevel : uint8_t
+{
   Debug,
   Info,
   Warning,

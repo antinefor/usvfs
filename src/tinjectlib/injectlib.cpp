@@ -18,21 +18,24 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
+#include <boost/predef.h>
+#include <boost/filesystem.hpp>
+#include <boost/static_assert.hpp>
+#include <boost/type_traits.hpp>
+namespace fs = boost::filesystem;
+
+#include <stdexcept>
 #include "injectlib.h"
-#include <windows_error.h>
 #include <stringutils.h>
 #include <stringcast.h>
 #include <exceptionex.h>
 #include <addrtools.h>
 // local version of asmjit with warning suppression
 #include "asmjit_sane.h"
-#include <boost/predef.h>
-#include <boost/filesystem.hpp>
 #include <fmt/format.h>
 #include <cstdio>
 #include <spdlog.h>
 #include <TlHelp32.h>
-
 
 using namespace asmjit;
 using namespace usvfs::shared;

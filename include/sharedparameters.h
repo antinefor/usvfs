@@ -4,11 +4,6 @@
 #include "dllimport.h"
 #include <shared_memory.h>
 
-#include <string>
-#include <boost/interprocess/containers/string.hpp>
-#include <boost/interprocess/containers/flat_set.hpp>
-#include <boost/interprocess/containers/slist.hpp>
-
 namespace usvfs
 {
 

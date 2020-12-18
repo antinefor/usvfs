@@ -1,10 +1,9 @@
 #pragma once
 
+#if 0
+
 #include "test_helpers.h"
 #include "winapi.h"
-#include <string>
-#include <fmt/format.h>
-
 
 namespace test {
 
@@ -248,3 +247,5 @@ namespace test {
   }
 
 };
+
+#endif

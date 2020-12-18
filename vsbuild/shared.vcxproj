@@ -82,12 +82,18 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.h</ForcedIncludeFiles>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.h</ForcedIncludeFiles>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -98,6 +104,9 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.h</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -112,6 +121,9 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>pch.h</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -119,42 +131,40 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\shared\addrtools.cpp" />
-    <ClCompile Include="..\src\shared\debug_monitor.cpp" />
     <ClCompile Include="..\src\shared\directory_tree.cpp" />
     <ClCompile Include="..\src\shared\exceptionex.cpp" />
     <ClCompile Include="..\src\shared\loghelpers.cpp" />
     <ClCompile Include="..\src\shared\ntdll_declarations.cpp" />
-    <ClCompile Include="..\src\shared\scopeguard.cpp" />
+    <ClCompile Include="..\src\shared\pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\src\shared\shmlogger.cpp" />
-    <ClCompile Include="..\src\shared\stringcast_win.cpp" />
+    <ClCompile Include="..\src\shared\stringcast.cpp" />
     <ClCompile Include="..\src\shared\stringutils.cpp" />
     <ClCompile Include="..\src\shared\test_helpers.cpp" />
     <ClCompile Include="..\src\shared\unicodestring.cpp" />
     <ClCompile Include="..\src\shared\wildcard.cpp" />
     <ClCompile Include="..\src\shared\winapi.cpp" />
-    <ClCompile Include="..\src\shared\windows_error.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\shared\addrtools.h" />
-    <ClInclude Include="..\src\shared\custom_casts.h" />
-    <ClInclude Include="..\src\shared\debug_monitor.h" />
     <ClInclude Include="..\src\shared\directory_tree.h" />
     <ClInclude Include="..\src\shared\exceptionex.h" />
     <ClInclude Include="..\src\shared\loghelpers.h" />
     <ClInclude Include="..\src\shared\ntdll_declarations.h" />
-    <ClInclude Include="..\src\shared\scopeguard.h" />
+    <ClInclude Include="..\src\shared\pch.h" />
     <ClInclude Include="..\src\shared\shared_memory.h" />
     <ClInclude Include="..\src\shared\shmlogger.h" />
     <ClInclude Include="..\src\shared\stringcast.h" />
-    <ClInclude Include="..\src\shared\stringcast_basic.h" />
-    <ClInclude Include="..\src\shared\stringcast_win.h" />
     <ClInclude Include="..\src\shared\stringutils.h" />
     <ClInclude Include="..\src\shared\test_helpers.h" />
+    <ClInclude Include="..\src\shared\tree_container.h" />
     <ClInclude Include="..\src\shared\unicodestring.h" />
     <ClInclude Include="..\src\shared\wildcard.h" />
     <ClInclude Include="..\src\shared\winapi.h" />
-    <ClInclude Include="..\src\shared\windows_error.h" />
     <ClInclude Include="..\src\shared\windows_sane.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

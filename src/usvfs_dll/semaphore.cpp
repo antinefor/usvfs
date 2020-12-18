@@ -1,7 +1,5 @@
 #include "semaphore.h"
-#include <spdlog.h>
-#include <scopeguard.h>
-
+#include "exceptionex.h"
 
 RecursiveBenaphore::RecursiveBenaphore()
   : m_Counter(0)

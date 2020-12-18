@@ -1,14 +1,8 @@
 #pragma once
 
-#include "windows_sane.h"
-
-#include <string>
-#include <shared_mutex>
-#include <unordered_map>
-
 #include "hookcontext.h"
 #include "hookcallcontext.h"
-#include "stringcast_basic.h"
+#include "stringcast.h"
 
 namespace usvfs {
 

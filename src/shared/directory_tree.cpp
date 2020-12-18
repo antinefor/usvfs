@@ -19,18 +19,26 @@ You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "directory_tree.h"
+#include "tree_container.h"
 
-fs::path::iterator usvfs::shared::nextIter(const fs::path::iterator &iter,
-                                           const fs::path::iterator &end) {
+namespace usvfs::shared
+{
+
+fs::path::iterator nextIter(
+  const fs::path::iterator &iter, const fs::path::iterator &end)
+{
   fs::path::iterator next = iter;
   advanceIter(next, end);
   return next;
 }
 
-void usvfs::shared::advanceIter(fs::path::iterator &iter,
-                                const fs::path::iterator &end) {
+void advanceIter(
+  fs::path::iterator &iter, const fs::path::iterator &end)
+{
   ++iter;
   while (iter != end &&
          (iter->wstring() == L"/" || iter->wstring() == L"\\" || iter->wstring() == L"."))
     ++iter;
 }
+
+}  // namespace

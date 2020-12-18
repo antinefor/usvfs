@@ -1,8 +1,6 @@
 #include <sharedparameters.h>
 #include <usvfsparametersprivate.h>
 #include <logging.h>
-#include <boost/algorithm/string/predicate.hpp>
-#include <spdlog.h>
 
 namespace usvfs
 {

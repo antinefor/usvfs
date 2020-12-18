@@ -23,11 +23,8 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "hooks/kernel32.h"
 #include "exceptionex.h"
 #include "usvfs.h"
-#include <utility.h>
-#include <ttrampolinepool.h>
-#include <stdexcept>
-#include <boost/format.hpp>
-#include <boost/filesystem.hpp>
+#include "../thooklib/utility.h"
+#include "../thooklib/ttrampolinepool.h"
 #include <shmlogger.h>
 #include <logging.h>
 #include <directory_tree.h>
@@ -35,13 +32,11 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include <winapi.h>
 #include <VersionHelpers.h>
 
-
 using namespace HookLib;
 namespace bf = boost::filesystem;
 
-
-namespace usvfs {
-
+namespace usvfs
+{
 
 HookManager *HookManager::s_Instance = nullptr;
 

@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "pch.h"
 #include <inject.h>
 #include <shared_memory.h>
 #include <usvfsparameters.h>

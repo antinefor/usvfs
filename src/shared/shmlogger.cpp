@@ -22,19 +22,9 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #pragma warning(disable : 4503)
 #pragma warning(push, 3)
 #include "shmlogger.h"
-#include <boost/interprocess/ipc/message_queue.hpp>
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <limits>
-#include <algorithm>
-#include <ShlObj.h>
-#include <comutil.h>
 #pragma warning(pop)
 
 #pragma warning(disable : 4996)
-
-#pragma comment(lib, "comsuppw")
 
 using namespace boost::interprocess;
 
@@ -125,6 +115,7 @@ void SHMLogger::get(char *buffer, size_t bufferSize)
                      receivedSize, prio);
   buffer[std::min(bufferSize - 1, static_cast<size_t>(receivedSize))] = '\0';
 }
+
 
 spdlog::sinks::shm_sink::shm_sink(const char *queueName)
   : m_LogQueue(open_only, (std::string("__shm_sink_") + queueName).c_str()), m_DroppedMessages(0)

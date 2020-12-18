@@ -23,7 +23,6 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "hookcontext.h"
 #include <usvfsparameters.h>
 #include <hooklib.h>
-#include <map>
 
 
 namespace usvfs {

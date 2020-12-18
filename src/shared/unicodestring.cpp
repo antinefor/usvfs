@@ -19,17 +19,12 @@ You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "unicodestring.h"
-#include "windows_error.h"
 #include "stringutils.h"
 #include "stringcast.h"
 #include "logging.h"
-#include <fmt/format.h>
-#include <spdlog.h>
 
-
-namespace ush = usvfs::shared;
-
-namespace usvfs {
+namespace usvfs
+{
 
 UnicodeString::UnicodeString(LPCWSTR string, size_t length)
 {
@@ -56,7 +51,8 @@ UnicodeString& UnicodeString::operator=(const std::wstring& string)
   return *this;
 }
 
-UnicodeString &UnicodeString::appendPath(PUNICODE_STRING path) {
+UnicodeString &UnicodeString::appendPath(PUNICODE_STRING path)
+{
   if (path != nullptr && path->Buffer && path->Length) {
     auto appendAt = size();
     if (appendAt) {
@@ -68,10 +64,12 @@ UnicodeString &UnicodeString::appendPath(PUNICODE_STRING path) {
     memcpy(&m_Buffer[appendAt], path->Buffer, path->Length);
     update();
   }
+
   return *this;
 }
 
-void UnicodeString::update() {
+void UnicodeString::update()
+{
   m_Data.Length = static_cast<USHORT>(size() * sizeof(WCHAR));
   m_Data.MaximumLength = static_cast<USHORT>((m_Buffer.capacity()-1) * sizeof(WCHAR));
   m_Data.Buffer = m_Buffer.data();
@@ -79,7 +77,8 @@ void UnicodeString::update() {
 
 std::ostream &operator<<(std::ostream &os, const UnicodeString &str)
 {
-  try {
+  try
+  {
     if (str.size() == 0) {
       os << "<empty string>";
     } else {
@@ -87,13 +86,15 @@ std::ostream &operator<<(std::ostream &os, const UnicodeString &str)
       // is the number of 16-bit characters in the buffer whereas toNarrow expects the
       // actual number of characters. It will always underestimate though, so worst
       // case scenario we truncate the string
-      os << ush::string_cast<std::string>(&str.m_Buffer[0], ush::CodePage::UTF8, str.size());
+      os << shared::string_cast<std::string>(&str.m_Buffer[0], shared::CodePage::UTF8, str.size());
     }
-  } catch (const std::exception &e) {
+  }
+  catch (const std::exception &e)
+  {
     os << e.what();
   }
 
   return os;
 }
 
-}
+} // namespace

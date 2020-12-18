@@ -22,16 +22,50 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "winapi.h"
 #include <spdlog.h>
 
-void logExtInfo(const std::exception &e, LogLevel logLevel) {
+namespace usvfs::shared
+{
+
+std::string windows_error::constructMessage(const std::string& input, int inErrorCode)
+{
+  std::ostringstream finalMessage;
+  finalMessage << input;
+
+  LPSTR buffer = nullptr;
+
+  DWORD errorCode = inErrorCode != -1 ? inErrorCode : GetLastError();
+
+  // TODO: the message is not english?
+  if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+    nullptr, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&buffer, 0, nullptr) == 0) {
+    finalMessage << " (errorcode " << errorCode << ")";
+  } else {
+    LPSTR lastChar = buffer + strlen(buffer) - 2;
+    *lastChar = '\0';
+    finalMessage << " (" << buffer << " [" << errorCode << "])";
+    LocalFree(buffer); // allocated by FormatMessage
+  }
+
+  SetLastError(errorCode); // restore error code because FormatMessage might have modified it
+  return finalMessage.str();
+}
+
+} // namespace
+
+
+void logExtInfo(const std::exception &e, LogLevel logLevel)
+{
   std::string content;
-  if (const std::string *msg = MyBoost::get_error_info<ex_msg>(e)) {
+
+  if (const std::string *msg = boost::get_error_info<ex_msg>(e)) {
     content = *msg;
   }
-  if (const DWORD *errorCode = MyBoost::get_error_info<ex_win_errcode>(e)) {
+
+  if (const DWORD *errorCode = boost::get_error_info<ex_win_errcode>(e)) {
     content = std::string("error: ") + winapi::ex::ansi::errorString(*errorCode);
   }
 
-  switch (logLevel) {
+  switch (logLevel)
+  {
     case LogLevel::Debug:    spdlog::get("usvfs")->debug(content); break;
     case LogLevel::Info:     spdlog::get("usvfs")->info(content); break;
     case LogLevel::Warning:  spdlog::get("usvfs")->warn(content); break;

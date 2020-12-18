@@ -21,22 +21,8 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "windows_sane.h"
-#include "windows_error.h"
 #include "logging.h"
-#include "stringcast_win.h"
-
-#include <string>
-#include <memory>
-#include <type_traits>
-#include <exception>
-#include <vector>
-#include <limits>
-#include <sstream>
-#include <utility>
-#include <shlobj.h>
-
-#include <boost/filesystem.hpp>
-
+#include "stringcast.h"
 
 #define ALIAS(alias, original) template <typename... Args>\
     auto alias(Args&&... args) -> decltype(original(std::forward<Args>(args)...)) {\
@@ -48,30 +34,42 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
       return original<T>(std::forward<Args>(args)...);\
     }
 
-namespace winapi {
 
-struct parameter_error : public std::runtime_error {
+namespace winapi
+{
+
+struct parameter_error : public std::runtime_error
+{
   parameter_error(const std::string &msg) : runtime_error(msg) {}
 };
 
-namespace process {
+} // namespace
+
+
+namespace winapi::process
+{
+
 /**
  * @brief result of process creation
  */
-struct Result {
-  Result() {
+struct Result
+{
+  Result()
+  {
     ::ZeroMemory(&processInfo, sizeof(PROCESS_INFORMATION));
     ::ZeroMemory(&startupInfo, sizeof(STARTUPINFO));
     startupInfo.cb = sizeof(STARTUPINFO);
   }
-  Result(const Result &) = delete;
+
   Result(Result &&reference)
       : valid(reference.valid), startupInfo(reference.startupInfo),
-        processInfo(reference.processInfo), errorCode(reference.errorCode) {
+        processInfo(reference.processInfo), errorCode(reference.errorCode)
+  {
     reference.valid = false;
   }
 
-  ~Result() {
+  ~Result()
+  {
     if (valid) {
       CloseHandle(processInfo.hProcess);
       CloseHandle(processInfo.hThread);
@@ -82,7 +80,10 @@ struct Result {
     }
   }
 
-  size_t readStdout(std::vector<uint8_t> &buffer, bool &eof) {
+  Result(const Result &) = delete;
+
+  size_t readStdout(std::vector<uint8_t> &buffer, bool &eof)
+  {
     if (stdoutPipe != INVALID_HANDLE_VALUE) {
       DWORD read;
       BOOL res = ReadFile(stdoutPipe, &buffer[0],
@@ -103,10 +104,12 @@ struct Result {
   HANDLE stdoutPipe{INVALID_HANDLE_VALUE};
 };
 
+
 /**
  * @brief internal class to handle process creation with named parameters.
  */
-template <typename CharT> class _Create {
+template <typename CharT> class _Create
+{
 public:
   _Create(const std::basic_string<CharT> &binaryName);
   _Create(const _Create<CharT> &reference) = delete;
@@ -118,7 +121,8 @@ public:
         m_ThreadAttributes(reference.m_ThreadAttributes),
         m_InheritHandles(reference.m_InheritHandles),
         m_CreationFlags(std::move(reference.m_CreationFlags)),
-        m_Executed(reference.m_Executed) {
+        m_Executed(reference.m_Executed)
+  {
     // stringstream should be moveable but it seems it isn't on mingw
     m_CommandLine << reference.m_CommandLine.rdbuf();
   }
@@ -126,19 +130,23 @@ public:
   /// named parameter "argument". May be called repeatedly. This is
   /// directly appended to the command line with a separating space. No
   /// quoting happens
-  template <typename ArgT> _Create &argument(const ArgT &argin) {
+  template <typename ArgT> _Create &argument(const ArgT &argin)
+  {
     m_CommandLine << " " << argin;
     return *this;
   }
 
-  template <typename ArgT> _Create &arg(const ArgT &argin) {
+  template <typename ArgT> _Create &arg(const ArgT &argin)
+  {
     return this->argument(argin);
   }
 
-  template <typename IterT> _Create &arguments(IterT begin, IterT end) {
+  template <typename IterT> _Create &arguments(IterT begin, IterT end)
+  {
     for (; begin != end; ++begin) {
       m_CommandLine << " " << *begin;
     }
+
     return *this;
   }
 
@@ -162,7 +170,8 @@ public:
   _Create &stdoutPipe();
 
   /// @brief end the named parameter cascade and create the process
-  Result _Create<CharT>::operator()() {
+  Result _Create<CharT>::operator()()
+  {
     m_CommandLine.seekp(0, std::ios::end);
     unsigned int length = static_cast<unsigned int>(m_CommandLine.tellp());
     std::unique_ptr<CharT[]> clBuffer(new CharT[length + 1]);
@@ -203,7 +212,8 @@ private:
                                BOOL bInheritHandles, DWORD dwCreationFlags,
                                LPVOID lpEnvironment, LPCWSTR lpCurrentDirectory,
                                LPSTARTUPINFOW lpStartupInfo,
-                               LPPROCESS_INFORMATION lpProcessInformation) {
+                               LPPROCESS_INFORMATION lpProcessInformation)
+  {
     return ::CreateProcessW(
         lpApplicationName, lpCommandLine, lpProcessAttributes,
         lpThreadAttributes, bInheritHandles, dwCreationFlags, lpEnvironment,
@@ -216,19 +226,23 @@ private:
                                BOOL bInheritHandles, DWORD dwCreationFlags,
                                LPVOID lpEnvironment, LPCSTR lpCurrentDirectory,
                                LPSTARTUPINFOW lpStartupInfo,
-                               LPPROCESS_INFORMATION lpProcessInformation) {
+                               LPPROCESS_INFORMATION lpProcessInformation)
+  {
     std::wstring executable;
     if (lpApplicationName != nullptr) {
       executable = usvfs::shared::string_cast<std::wstring>(lpApplicationName);
     }
+
     std::wstring cmdline;
     if (lpCommandLine != nullptr) {
       cmdline = usvfs::shared::string_cast<std::wstring>(lpCommandLine);
     }
+
     std::wstring cwd;
     if (lpCurrentDirectory != nullptr) {
       cwd = usvfs::shared::string_cast<std::wstring>(lpCurrentDirectory);
     }
+
     return ::CreateProcessW(
         lpApplicationName != nullptr ? executable.c_str() : nullptr,
         lpCommandLine != nullptr ? &cmdline[0] : nullptr, lpProcessAttributes,
@@ -237,7 +251,8 @@ private:
         lpProcessInformation);
   }
 
-  HANDLE setupPipe(HANDLE &childHandle) {
+  HANDLE setupPipe(HANDLE &childHandle)
+  {
     SECURITY_ATTRIBUTES attr;
     attr.nLength = sizeof(SECURITY_ATTRIBUTES);
     attr.bInheritHandle = TRUE;
@@ -265,55 +280,77 @@ private:
 
   HANDLE m_Stdout{INVALID_HANDLE_VALUE};
 };
-}
 
-namespace file {
+}   // namespace
+
+
+namespace winapi::file
+{
 /**
  * @brief internal class to handle file creation (opening) with named
  * parameters.
  */
-template <typename CharT, DWORD DefaultDisposition> class _Create {
+template <typename CharT, DWORD DefaultDisposition> class _Create
+{
 public:
-  _Create(const std::basic_string<CharT> &fileName) : m_FileName(fileName) {}
+  _Create(const std::basic_string<CharT> &fileName)
+    : m_FileName(fileName)
+  {
+  }
 
-  _Create &access(DWORD desiredAccess) {
+  _Create &access(DWORD desiredAccess)
+  {
     m_DesiredAccess = desiredAccess;
     return *this;
   }
-  _Create &share(DWORD shareMode) {
+
+  _Create &share(DWORD shareMode)
+  {
     m_ShareMode = shareMode;
     return *this;
   }
-  _Create &createAlways() {
+
+  _Create &createAlways()
+  {
     m_CreationDisposition = CREATE_ALWAYS;
     return *this;
   }
-  _Create &openAlways() {
+
+  _Create &openAlways()
+  {
     m_CreationDisposition = OPEN_ALWAYS;
     return *this;
   }
-  _Create &security(SECURITY_ATTRIBUTES *attributes) {
+
+  _Create &security(SECURITY_ATTRIBUTES *attributes)
+  {
     m_SecurityAttributes = attributes;
     return *this;
   }
-  _Create &templateFile(HANDLE templateFile) {
+
+  _Create &templateFile(HANDLE templateFile)
+  {
     m_Template = templateFile;
     return *this;
   }
 
   /// @brief end the named parameter cascade and open the file
-  HANDLE operator()() {
+  HANDLE operator()()
+  {
     return callDelegate(
         std::integral_constant<bool, sizeof(CharT) == sizeof(wchar_t)>());
   }
 
 private:
-  HANDLE callDelegate(std::true_type) {
+  HANDLE callDelegate(std::true_type)
+  {
     return ::CreateFileW(m_FileName.c_str(), m_DesiredAccess, m_ShareMode,
                          m_SecurityAttributes, m_CreationDisposition, m_Flags,
                          m_Template);
   }
-  HANDLE callDelegate(std::false_type) {
+
+  HANDLE callDelegate(std::false_type)
+  {
     return ::CreateFileA(m_FileName.c_str(), m_DesiredAccess, m_ShareMode,
                          m_SecurityAttributes, m_CreationDisposition, m_Flags,
                          m_Template);
@@ -328,176 +365,192 @@ private:
   HANDLE m_Template{nullptr};
   SECURITY_ATTRIBUTES *m_SecurityAttributes{nullptr};
 };
-}
 
-namespace ansi {
-  std::string getModuleFileName(HMODULE module, HANDLE process = INVALID_HANDLE_VALUE);
-  std::pair<std::string, std::string> getFullPathName(LPCSTR fileName);
-  std::string getCurrentDirectory();
-  typedef process::_Create<char> createProcess;
-  typedef file::_Create<char, CREATE_NEW> createFile;
-  typedef file::_Create<char, OPEN_EXISTING> openFile;
-}
+} // namespace
 
-namespace wide {
-  std::wstring getModuleFileName(HMODULE module, HANDLE process = INVALID_HANDLE_VALUE);
-  std::pair<std::wstring, std::wstring> getFullPathName(LPCWSTR fileName);
-  std::wstring getCurrentDirectory();
-  std::wstring getKnownFolderPath(REFKNOWNFOLDERID folderID);
 
-  typedef process::_Create<wchar_t> createProcess;
-  typedef file::_Create<wchar_t, CREATE_NEW> createFile;
-  typedef file::_Create<wchar_t, OPEN_EXISTING> openFile;
-}
+namespace winapi::ansi
+{
+
+std::string getModuleFileName(HMODULE module, HANDLE process = INVALID_HANDLE_VALUE);
+std::pair<std::string, std::string> getFullPathName(LPCSTR fileName);
+std::string getCurrentDirectory();
+typedef process::_Create<char> createProcess;
+typedef file::_Create<char, CREATE_NEW> createFile;
+typedef file::_Create<char, OPEN_EXISTING> openFile;
+
+} // namespace
+
+
+namespace winapi::wide
+{
+
+std::wstring getModuleFileName(HMODULE module, HANDLE process = INVALID_HANDLE_VALUE);
+std::pair<std::wstring, std::wstring> getFullPathName(LPCWSTR fileName);
+std::wstring getCurrentDirectory();
+std::wstring getKnownFolderPath(REFKNOWNFOLDERID folderID);
+
+typedef process::_Create<wchar_t> createProcess;
+typedef file::_Create<wchar_t, CREATE_NEW> createFile;
+typedef file::_Create<wchar_t, OPEN_EXISTING> openFile;
+
+} // namespace
+
 
 /**
  * useful convenience functions close to the api
  */
-namespace ex {
-  /**
-   * @brief retrieve the address range covering the code section of a module
-   * @param moduleHandle handle to the module
-   * @return start and end address of the code section
-   * @note the code section can only be identified if it has the standardized section name ".text"
-   *       Otherwise the whole address range of all sections in the module is returned.
-   *       This happens for compressed exectuables for example
-   */
-  std::pair<uintptr_t, uintptr_t> getSectionRange(HANDLE moduleHandle);
+namespace winapi::ex
+{
 
-  struct OSVersion {
-    DWORD major;
-    DWORD minor;
-    DWORD build;
-    DWORD platformid;
-    DWORD servicpack;
-  };
+/**
+  * @brief retrieve the address range covering the code section of a module
+  * @param moduleHandle handle to the module
+  * @return start and end address of the code section
+  * @note the code section can only be identified if it has the standardized section name ".text"
+  *       Otherwise the whole address range of all sections in the module is returned.
+  *       This happens for compressed exectuables for example
+  */
+std::pair<uintptr_t, uintptr_t> getSectionRange(HANDLE moduleHandle);
 
-  OSVersion getOSVersion();
+struct OSVersion {
+  DWORD major;
+  DWORD minor;
+  DWORD build;
+  DWORD platformid;
+  DWORD servicpack;
+};
 
-  namespace ansi {
-    /**
-     * @brief retrieve an error string for a windows error message
-     * @param errorCode the error code to look up. If this is left at the default, ::GetLastError is used
-     * @return string representation of the error. Currently this is localized
-     */
-    std::string errorString(DWORD errorCode = std::numeric_limits<DWORD>::max());
+OSVersion getOSVersion();
 
-    /**
-     * @brief convert filetime to string
-     * @param time time to convert
-     * @return a string representation (currently only supports utc and iso format with second precision)
-     */
-    std::string toString(const FILETIME &time);
+} // namespace
 
-    /**
-     * @brief find file name in a windows file path
-     * @param path the path to search in
-     * @return the file name of the path or an empty string if the path ends on
-     *         a slash
-     * @note this function doesn't access the file system so it doesn't depend
-     *       on whether the file actually exists. This also means it can't
-     *       determine if a path that doesn't end on a slash refers to a file or
-     *       directory
-     * @note the return value is a pointer into the same buffer, no copy is
-     *       created
-     */
-    LPCSTR GetBaseName(LPCSTR string);
-  }
 
-  namespace wide {
-    /**
-     * retrieve the name of the binary section containing the specified address
-     * @param address the address to test
-     * @param process the process for which to retrieve the section. If this is
-     *        nullptr, the current process is analized.
-     * @return name of the section or "unknown" if no matching section was found
-     */
-    std::wstring getSectionName(PVOID address, HANDLE process = nullptr);
+namespace winapi::ex::ansi
+{
 
-    /**
-     * @brief test if a file exists
-     * @param path path to check
-     * @param isDirectory (optional) if this isn't null, it will be set to true if the path specifies a directory, false otherwise
-     * @return true if the file (or directory) exists.
-     */
-    bool fileExists(LPCWSTR fileName, bool *isDirectory = nullptr);
+/**
+  * @brief retrieve an error string for a windows error message
+  * @param errorCode the error code to look up. If this is left at the default, ::GetLastError is used
+  * @return string representation of the error. Currently this is localized
+  */
+std::string errorString(DWORD errorCode = std::numeric_limits<DWORD>::max());
 
-    /**
-     * @brief retrieve an error string for a windows error message
-     * @param errorCode the error code to look up. If this is left at the default, ::GetLastError is used
-     * @return string representation of the error. Currently this is localized
-     */
-    std::wstring errorString(DWORD errorCode = std::numeric_limits<DWORD>::max());
+/**
+  * @brief convert filetime to string
+  * @param time time to convert
+  * @return a string representation (currently only supports utc and iso format with second precision)
+  */
+std::string toString(const FILETIME &time);
 
-    /**
-     * @brief convert filetime to string
-     * @param time time to convert
-     * @return a string representation (currently only supports utc and iso format with second precision)
-     */
-    std::wstring toString(const FILETIME &time);
+/**
+  * @brief find file name in a windows file path
+  * @param path the path to search in
+  * @return the file name of the path or an empty string if the path ends on
+  *         a slash
+  * @note this function doesn't access the file system so it doesn't depend
+  *       on whether the file actually exists. This also means it can't
+  *       determine if a path that doesn't end on a slash refers to a file or
+  *       directory
+  * @note the return value is a pointer into the same buffer, no copy is
+  *       created
+  */
+LPCSTR GetBaseName(LPCSTR string);
 
-    /**
-     * @brief find file name in a windows file path
-     * @param path the path to search in
-     * @return the file name of the path or an empty string if the path ends on
-     *         a slash
-     * @note this function doesn't access the file system so it doesn't depend
-     *       on whether the file actually exists. This also means it can't
-     *       determine if a path that doesn't end on a slash refers to a file or
-     *       directory
-     * @note the return value is a pointer into the same buffer, no copy is
-     *       created
-     */
-    LPCWSTR GetBaseName(LPCWSTR path);
+} // namespace
 
-    /**
-     * @see const-variant of this function
-     */
-    LPWSTR GetBaseName(LPWSTR path);
 
-    struct FileResult {
-      std::wstring fileName;
-      ULONG attributes;
-    };
+namespace winapi::ex::wide
+{
+/**
+  * retrieve the name of the binary section containing the specified address
+  * @param address the address to test
+  * @param process the process for which to retrieve the section. If this is
+  *        nullptr, the current process is analized.
+  * @return name of the section or "unknown" if no matching section was found
+  */
+std::wstring getSectionName(PVOID address, HANDLE process = nullptr);
 
-    /**
-     * @brief a quick function to find all files in a directory or files following a pattern. This uses
-     *        NtQueryDirectoryFile api internally so it should be faster than the usual FindFirstFile/FindNextFile pattern
-     * @param directoryName name of the directory to search in
-     * @param pattern name pattern that needs to match
-     * @return the list of files found
-     */
-    std::vector<FileResult> quickFindFiles(LPCWSTR directoryName, LPCWSTR pattern);
+/**
+  * @brief test if a file exists
+  * @param path path to check
+  * @param isDirectory (optional) if this isn't null, it will be set to true if the path specifies a directory, false otherwise
+  * @return true if the file (or directory) exists.
+  */
+bool fileExists(LPCWSTR fileName, bool *isDirectory = nullptr);
 
-    /**
-     * @brief create the specified directory including all intermediate
-     * directories
-     * @param path the path to create
-     * @param securityAttributes the security attributes to use for all created
-     *        directories. if this is null (default), the standard attributes
-     *        are used
-     * @return true if the directory (and possibly parent directories) were actually created
-     *        and false if the directory already existed. Throws exceptions on failure.
-     */
-    bool createPath(boost::filesystem::path path,
-                    LPSECURITY_ATTRIBUTES securityAttributes = nullptr);
-    inline bool createPath(LPCWSTR path,
-                    LPSECURITY_ATTRIBUTES securityAttributes = nullptr)
-    {
-      return createPath(boost::filesystem::path(path), securityAttributes);
-    }
+/**
+  * @brief retrieve an error string for a windows error message
+  * @param errorCode the error code to look up. If this is left at the default, ::GetLastError is used
+  * @return string representation of the error. Currently this is localized
+  */
+std::wstring errorString(DWORD errorCode = std::numeric_limits<DWORD>::max());
 
-    std::wstring getWindowsBuildLab(bool ex = false);
-  }
+/**
+  * @brief convert filetime to string
+  * @param time time to convert
+  * @return a string representation (currently only supports utc and iso format with second precision)
+  */
+std::wstring toString(const FILETIME &time);
+
+/**
+  * @brief find file name in a windows file path
+  * @param path the path to search in
+  * @return the file name of the path or an empty string if the path ends on
+  *         a slash
+  * @note this function doesn't access the file system so it doesn't depend
+  *       on whether the file actually exists. This also means it can't
+  *       determine if a path that doesn't end on a slash refers to a file or
+  *       directory
+  * @note the return value is a pointer into the same buffer, no copy is
+  *       created
+  */
+LPCWSTR GetBaseName(LPCWSTR path);
+
+/**
+  * @see const-variant of this function
+  */
+LPWSTR GetBaseName(LPWSTR path);
+
+struct FileResult {
+  std::wstring fileName;
+  ULONG attributes;
+};
+
+/**
+  * @brief a quick function to find all files in a directory or files following a pattern. This uses
+  *        NtQueryDirectoryFile api internally so it should be faster than the usual FindFirstFile/FindNextFile pattern
+  * @param directoryName name of the directory to search in
+  * @param pattern name pattern that needs to match
+  * @return the list of files found
+  */
+std::vector<FileResult> quickFindFiles(LPCWSTR directoryName, LPCWSTR pattern);
+
+/**
+  * @brief create the specified directory including all intermediate
+  * directories
+  * @param path the path to create
+  * @param securityAttributes the security attributes to use for all created
+  *        directories. if this is null (default), the standard attributes
+  *        are used
+  * @return true if the directory (and possibly parent directories) were actually created
+  *        and false if the directory already existed. Throws exceptions on failure.
+  */
+bool createPath(boost::filesystem::path path,
+                LPSECURITY_ATTRIBUTES securityAttributes = nullptr);
+inline bool createPath(LPCWSTR path,
+                LPSECURITY_ATTRIBUTES securityAttributes = nullptr)
+{
+  return createPath(boost::filesystem::path(path), securityAttributes);
 }
 
+std::wstring getWindowsBuildLab(bool ex = false);
+
+} // namespace
 
 
-//
-// HERE BE IMPLEMENTATION
-//
-
-namespace process {
+namespace winapi::process
+{
 
 template <typename CharT>
 _Create<CharT>::_Create(const std::basic_string<CharT> &binaryName)
@@ -544,10 +597,4 @@ _Create<CharT> &_Create<CharT>::stdoutPipe() {
   return *this;
 }
 
-}
-
-namespace file {
-
-}
-
-}
+} // namespace

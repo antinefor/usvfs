@@ -1,8 +1,7 @@
 #pragma once
 
-#include <stdexcept>
-#include <filesystem>
-#include <cstdio>
+#if 0
+
 #include "windows_sane.h"
 
 namespace test {
@@ -115,3 +114,5 @@ namespace test {
     HMODULE m_mod;
   };
 };
+
+#endif

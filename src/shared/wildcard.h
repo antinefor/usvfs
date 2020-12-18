@@ -26,11 +26,8 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 
 #include "windows_sane.h"
 
-namespace usvfs {
-
-namespace shared {
-
-namespace wildcard {
+namespace usvfs::shared::wildcard
+{
 
 /**
  * @brief match string to wildcard windows-style
@@ -68,8 +65,4 @@ bool Match(LPCSTR pszString, LPCSTR pszMatch);
  */
 LPCSTR PartialMatch(LPCSTR pszString, LPCSTR pszMatch);
 
-} // namespace wildcard
-
-} // namespace shared
-
-} // namespace usvfs
+} // namespace

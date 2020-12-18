@@ -21,13 +21,8 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "wildcard.h"
 #include "windows_sane.h"
 #include "logging.h"
-#include <string>
-#include <cstring>
 
-
-
-
-bool IsInnerMatch(LPCWSTR pszString, LPCWSTR pszMatch)
+static bool IsInnerMatch(LPCWSTR pszString, LPCWSTR pszMatch)
 {
   while (*pszMatch != L'\0') {
     if ((*pszMatch==L'?') || (*pszMatch==L'>')) {
@@ -59,25 +54,7 @@ bool IsInnerMatch(LPCWSTR pszString, LPCWSTR pszMatch)
   return !*pszString && !*pszMatch;
 }
 
-
-bool usvfs::shared::wildcard::Match(LPCWSTR pszString, LPCWSTR pszMatch)
-{
-  if (*pszString == L'.') {
-    // cmd.exe seems to ignore
-    return Match(pszString + 1, pszMatch);
-  } else {
-    size_t len = wcslen(pszMatch);
-    if ((len > 2) && (wcscmp(pszMatch + len - 2, L".*") == 0)) {
-      // cmd.exe seems to completely ignore .* at the end.
-      std::wstring temp(pszMatch, pszMatch + len - 2);
-      return IsInnerMatch(pszString, temp.c_str());
-    }
-    return IsInnerMatch(pszString, pszMatch);
-  }
-}
-
-
-LPCSTR InnerMatch(LPCSTR pszString, LPCSTR pszMatch)
+static LPCSTR InnerMatch(LPCSTR pszString, LPCSTR pszMatch)
 {
   // We have a special case where string is empty ("") and the mask is "*".
   // We need to handle this too. So we can't test on !*pszString here.
@@ -152,7 +129,28 @@ LPCSTR InnerMatch(LPCSTR pszString, LPCSTR pszMatch)
   }
 }
 
-bool usvfs::shared::wildcard::Match(LPCSTR pszString, LPCSTR pszMatch)
+
+namespace usvfs::shared::wildcard
+{
+
+bool Match(LPCWSTR pszString, LPCWSTR pszMatch)
+{
+  if (*pszString == L'.') {
+    // cmd.exe seems to ignore
+    return Match(pszString + 1, pszMatch);
+  } else {
+    size_t len = wcslen(pszMatch);
+    if ((len > 2) && (wcscmp(pszMatch + len - 2, L".*") == 0)) {
+      // cmd.exe seems to completely ignore .* at the end.
+      std::wstring temp(pszMatch, pszMatch + len - 2);
+      return IsInnerMatch(pszString, temp.c_str());
+    }
+    return IsInnerMatch(pszString, pszMatch);
+  }
+}
+
+
+bool Match(LPCSTR pszString, LPCSTR pszMatch)
 {
   if (*pszString == '.') {
     // cmd.exe seems to ignore
@@ -171,7 +169,7 @@ bool usvfs::shared::wildcard::Match(LPCSTR pszString, LPCSTR pszMatch)
   }
 }
 
-LPCSTR usvfs::shared::wildcard::PartialMatch(LPCSTR pszString, LPCSTR pszMatch)
+LPCSTR PartialMatch(LPCSTR pszString, LPCSTR pszMatch)
 {
   if (*pszString == '.') {
     // cmd.exe seems to ignore dots at the start
@@ -194,3 +192,5 @@ LPCSTR usvfs::shared::wildcard::PartialMatch(LPCSTR pszString, LPCSTR pszMatch)
     return InnerMatch(pszString, pszMatch);
   }
 }
+
+} // namespace

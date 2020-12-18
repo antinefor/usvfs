@@ -18,6 +18,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
+#include "pch.h"
 #include "inject.h"
 #include "usvfsparametersprivate.h"
 #include <winapi.h>

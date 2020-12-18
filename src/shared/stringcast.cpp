@@ -18,4 +18,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
-#include "addrtools.h"
+#include "stringcast.h"
+
+namespace usvfs::shared
+{
+
+UINT windowsCP(CodePage codePage)
+{
+  switch (codePage) {
+    case CodePage::LOCAL:  return CP_ACP;
+    case CodePage::UTF8:   return CP_UTF8;
+    case CodePage::LATIN1: return 850;
+  }
+  // this should not be possible in practice
+  throw std::runtime_error("unsupported codePage");
+}
+
+} // namespace
