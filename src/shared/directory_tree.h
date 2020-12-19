@@ -63,17 +63,44 @@ void advanceIter(fs::path::iterator &iter, const fs::path::iterator &end);
 class DecomposablePath
 {
 public:
-  explicit DecomposablePath(std::string_view s);
+  explicit DecomposablePath(std::string_view s)
+    : m_s(s), m_begin(0), m_end(0)
+  {
+    m_end = nextSeparator(m_begin);
+  }
 
-  bool last() const;
-  void next();
-  std::string_view current() const;
+  bool last() const
+  {
+    return (m_end >= m_s.size());
+  }
+
+  void next()
+  {
+    m_begin = m_end + 1;
+    m_end = nextSeparator(m_begin);
+  }
+
+  std::string_view current() const
+  {
+    return {m_s.data() + m_begin, m_end - m_begin};
+  }
 
 private:
   std::string_view m_s;
   std::size_t m_begin, m_end;
 
-  std::size_t nextSeparator(std::size_t from) const;
+  std::size_t nextSeparator(std::size_t from) const
+  {
+    while (from < m_s.size()) {
+      if (m_s[from] == '/' || m_s[from] == '\\') {
+        break;
+      }
+
+      ++from;
+    }
+
+    return from;
+  }
 };
 
 

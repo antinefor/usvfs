@@ -238,8 +238,6 @@ private:
     const T &data, bool overwrite, unsigned int flags,
     const VoidAllocatorT &allocator)
   {
-    StringT iterString(path.current(), allocator);
-
     if (path.last()) {
       typename TreeT::NodePtrT newNode = base->node(path.current());
 
@@ -249,26 +247,26 @@ private:
         newNode = createSubPtr(node);
         newNode->m_Self = TreeT::WeakPtrT(newNode);
         newNode->m_Parent = base->m_Self;
-        base->set(std::move(iterString), newNode);
+        base->set(StringT(path.current(), allocator), newNode);
         return newNode;
       } else if (overwrite) {
         newNode->m_Data = createData<TreeT::DataT, T>(data, allocator);
         newNode->m_Flags = static_cast<usvfs::shared::TreeFlags>(flags);
         return newNode;
       } else {
-        auto res = base->m_Nodes.emplace(std::move(iterString), newNode);
+        auto res = base->m_Nodes.emplace(StringT(path.current(), allocator), newNode);
         return res.second ? newNode : TreeT::NodePtrT();
       }
     } else {
       // not last component, continue search in child node
-      auto subNode = base->m_Nodes.find(iterString);
+      auto subNode = base->m_Nodes.find(path.current());
 
       if (subNode == base->m_Nodes.end()) {
         typename TreeT::NodePtrT newNode = createSubPtr(createSubNode(
           allocator, path.current(),
           FLAG_DIRECTORY | FLAG_DUMMY, createEmpty()));
 
-        subNode = base->m_Nodes.emplace(std::move(iterString), newNode).first;
+        subNode = base->m_Nodes.emplace(StringT(path.current(), allocator), newNode).first;
         subNode->second->m_Self = TreeT::WeakPtrT(subNode->second);
         subNode->second->m_Parent = base->m_Self;
       }
