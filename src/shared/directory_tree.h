@@ -59,6 +59,39 @@ fs::path::iterator nextIter(
 
 void advanceIter(fs::path::iterator &iter, const fs::path::iterator &end);
 
+
+class DecomposablePath
+{
+public:
+  explicit DecomposablePath(std::wstring_view s)
+    : m_path(s.begin(), s.end()), m_itor(m_path.begin()), m_string(m_itor->string())
+  {
+  }
+
+  bool last() const
+  {
+    return (nextIter(m_itor, m_path.end()) == m_path.end());
+  }
+
+  void next()
+  {
+    m_itor = nextIter(m_itor, m_path.end());
+    m_string = m_itor->string();
+  }
+
+  std::string_view current() const
+  {
+    return m_string;
+  }
+
+private:
+  fs::path m_path;
+  fs::path::iterator m_itor;
+  std::string m_string;
+};
+
+
+
 namespace bi = boost::interprocess;
 namespace bmi = boost::multi_index;
 
@@ -124,19 +157,53 @@ public:
     template <typename U, typename V>
     bool operator() (const U &lhs, const V &rhs) const
     {
-      return _stricmp(getCharPtr(lhs), getCharPtr(rhs)) < 0;
+      const auto r = _strnicmp(
+        getCharPtr(lhs), getCharPtr(rhs),
+        std::min(getLength(lhs), getLength(rhs)));
+
+      return (r < 0);
     }
 
   private:
-    const char *getCharPtr(const StringT &s) const {
+    const char *getCharPtr(const StringT &s) const
+    {
       return s.c_str();
     }
 
-    const char *getCharPtr(const std::string &s) const {
+    const char *getCharPtr(const std::string &s) const
+    {
       return s.c_str();
     }
-    const char *getCharPtr(const char *s) const {
+
+    const char *getCharPtr(const char *s) const
+    {
       return s;
+    }
+
+    const char *getCharPtr(std::string_view s) const
+    {
+      return s.data();
+    }
+
+
+    size_t getLength(const StringT& s) const
+    {
+      return s.size();
+    }
+
+    size_t getLength(const std::string& s) const
+    {
+      return s.size();
+    }
+
+    size_t getLength(const char *s) const
+    {
+      return strlen(s);
+    }
+
+    size_t getLength(std::string_view s) const
+    {
+      return s.size();
     }
   };
 
@@ -165,10 +232,10 @@ public:
    * @brief construct a new node to be inserted in an existing tree
    **/
   DirectoryTree(
-    const std::string &name, TreeFlags flags, const NodePtrT &parent,
+    std::string_view name, TreeFlags flags, const NodePtrT &parent,
     const NodeDataT &data, const VoidAllocatorT &allocator) :
-      m_Parent(parent), m_Name(name.c_str(), allocator), m_Data(data),
-      m_Nodes(allocator), m_Flags(flags)
+      m_Parent(parent), m_Name(name.begin(), name.end(), allocator),
+      m_Data(data), m_Nodes(allocator), m_Flags(flags)
   {
   }
 
@@ -302,7 +369,7 @@ public:
    * @param name name of the node
    * @return the node found or an empty pointer if no such node was found
    */
-  NodePtrT node(const char *name, MissingThrowT) const
+  NodePtrT node(std::string_view name, MissingThrowT) const
   {
     auto iter = m_Nodes.find(name);
 
@@ -318,7 +385,7 @@ public:
    * @param name name of the node
    * @return the node found or an empty pointer if no such node was found
    */
-  NodePtrT node(const char *name)
+  NodePtrT node(std::string_view name)
   {
     auto iter = m_Nodes.find(name);
 
@@ -334,7 +401,7 @@ public:
    * @param name name of the node
    * @return the node found or an empty pointer if no such node was found
    */
-  const NodePtrT node(const char *name, MissingThrowT)
+  const NodePtrT node(std::string_view name, MissingThrowT)
   {
     auto iter = m_Nodes.find(name);
 
@@ -350,7 +417,7 @@ public:
    * @param name name of the node
    * @return the node found or an empty pointer if no such node was found
    */
-  const NodePtrT node(const char *name) const
+  const NodePtrT node(std::string_view name) const
   {
     auto iter = m_Nodes.find(name);
 
@@ -366,7 +433,7 @@ public:
    * @param name name of the node
    * @return true if the node exists, false otherwise
    */
-  bool exists(const char *name) const
+  bool exists(std::string_view name) const
   {
     return m_Nodes.find(name) != m_Nodes.end();
   }
@@ -469,9 +536,9 @@ public:
   }
 
 PRIVATE:
-  void set(const StringT &key, const NodePtrT &value)
+  void set(StringT key, const NodePtrT &value)
   {
-    auto res = m_Nodes.emplace(key, value);
+    auto res = m_Nodes.emplace(std::move(key), value);
     if (!res.second) {
       res.first->second = value;
     }
