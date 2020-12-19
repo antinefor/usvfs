@@ -133,18 +133,20 @@ public:
     const fs::path &name, const T &data,
     TreeFlags flags = 0, bool overwrite = true)
   {
-    try
-    {
+    for (;;) {
       DecomposablePath dp(name.string());
 
-      return addNode(
-        m_TreeMeta->tree.get(), dp,
-        data, overwrite, flags, allocator());
-    }
-    catch (const bi::bad_alloc&)
-    {
+      try
+      {
+        return addNode(
+          m_TreeMeta->tree.get(), dp,
+          data, overwrite, flags, allocator());
+      }
+      catch (const bi::bad_alloc&)
+      {
+      }
+
       reassign();
-      return addFile(name, data, flags, overwrite);
     }
   }
 
@@ -162,18 +164,20 @@ public:
     const fs::path &name, const T &data,
     TreeFlags flags = 0, bool overwrite = true)
   {
-    try
-    {
+    for (;;) {
       DecomposablePath dp(name.string());
 
-      return addNode(
-        m_TreeMeta->tree.get(), dp, data,
-        overwrite, flags | FLAG_DIRECTORY, allocator());
-    }
-    catch (const bi::bad_alloc &)
-    {
+      try
+      {
+        return addNode(
+          m_TreeMeta->tree.get(), dp, data,
+          overwrite, flags | FLAG_DIRECTORY, allocator());
+      }
+      catch (const bi::bad_alloc &)
+      {
+      }
+
       reassign();
-      return addDirectory(name, data, flags, overwrite);
     }
   }
 
