@@ -60,26 +60,36 @@ fs::path::iterator nextIter(
 void advanceIter(fs::path::iterator &iter, const fs::path::iterator &end);
 
 
+// decomposes a path into its components
+//
 class DecomposablePath
 {
 public:
+  // the given string_view is not copied, it must stay alive
+  //
   explicit DecomposablePath(std::string_view s)
     : m_s(s), m_begin(0), m_end(0)
   {
     m_end = nextSeparator(m_begin);
   }
 
-  bool last() const
-  {
-    return (m_end >= m_s.size());
-  }
-
+  // move to the next component, undefined if last() is true
+  //
   void next()
   {
     m_begin = m_end + 1;
     m_end = nextSeparator(m_begin);
   }
 
+  // whether this is the last component
+  //
+  bool last() const
+  {
+    return (m_end >= m_s.size());
+  }
+
+  // the current component
+  //
   std::string_view current() const
   {
     return {m_s.data() + m_begin, m_end - m_begin};
@@ -89,6 +99,8 @@ private:
   std::string_view m_s;
   std::size_t m_begin, m_end;
 
+  // finds the next path separator
+  //
   std::size_t nextSeparator(std::size_t from) const
   {
     while (from < m_s.size()) {
