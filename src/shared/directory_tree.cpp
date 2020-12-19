@@ -41,4 +41,40 @@ void advanceIter(
     ++iter;
 }
 
+
+DecomposablePath::DecomposablePath(std::string_view s)
+  : m_s(s), m_begin(0), m_end(0)
+{
+  m_end = nextSeparator(m_begin);
+}
+
+bool DecomposablePath::last() const
+{
+  return (m_end >= m_s.size());
+}
+
+void DecomposablePath::next()
+{
+  m_begin = m_end + 1;
+  m_end = nextSeparator(m_begin);
+}
+
+std::string_view DecomposablePath::current() const
+{
+  return {m_s.data() + m_begin, m_end - m_begin};
+}
+
+std::size_t DecomposablePath::nextSeparator(std::size_t from) const
+{
+  while (from < m_s.size()) {
+    if (m_s[from] == '/' || m_s[from] == '\\') {
+      break;
+    }
+
+    ++from;
+  }
+
+  return from;
+}
+
 }  // namespace

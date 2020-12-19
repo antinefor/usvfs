@@ -135,7 +135,7 @@ public:
   {
     try
     {
-      DecomposablePath dp(name.wstring());
+      DecomposablePath dp(name.string());
 
       return addNode(
         m_TreeMeta->tree.get(), dp,
@@ -164,7 +164,7 @@ public:
   {
     try
     {
-      DecomposablePath dp(name.wstring());
+      DecomposablePath dp(name.string());
 
       return addNode(
         m_TreeMeta->tree.get(), dp, data,
