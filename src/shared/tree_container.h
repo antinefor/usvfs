@@ -241,7 +241,7 @@ private:
     if (path.last()) {
       typename TreeT::NodePtrT newNode = base->node(path.current());
 
-      if (newNode.get() == nullptr) {
+      if (!newNode) {
         // last name component, should be the filename
         TreeT *node = createSubNode(allocator, path.current(), flags, data);
         newNode = createSubPtr(node);
@@ -254,8 +254,8 @@ private:
         newNode->m_Flags = static_cast<usvfs::shared::TreeFlags>(flags);
         return newNode;
       } else {
-        auto res = base->m_Nodes.emplace(StringT(path.current(), allocator), newNode);
-        return res.second ? newNode : TreeT::NodePtrT();
+        // the node is already in the tree, overwrite is false, nothing to do
+        return {};
       }
     } else {
       // not last component, continue search in child node
