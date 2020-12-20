@@ -50,7 +50,75 @@ std::wstring usvfs_dump_path;
 
 typedef std::codecvt_utf8_utf16<wchar_t> u8u16_convert;
 
-static std::set<std::string> extensions { ".exe", ".dll" };
+// this is called for every single file, so it's a bit long winded, but it's
+// as fast as it gets, probably
+//
+template <std::size_t LongestExtension, std::size_t ExtensionsCount>
+bool extensionMatchesCI(
+  std::string_view name,
+  const std::array<std::string_view, ExtensionsCount>& extensionsLC,
+  const std::array<std::string_view, ExtensionsCount>& extensionsUC)
+{
+  constexpr std::size_t longestExtensionWithDot = LongestExtension + 1;
+
+  // quick check
+  if (name.size() < longestExtensionWithDot) {
+    return false;
+  }
+
+  // for each extension
+  for (std::size_t i=0; i<ExtensionsCount; ++i) {
+    const std::size_t extensionLength = extensionsLC[i].size();
+    const std::size_t extensionLengthWithDot = extensionLength + 1;
+
+    // check size
+    if (name.size() < extensionLengthWithDot) {
+      continue;
+    }
+
+    // check dot
+    if (name[name.size() - extensionLengthWithDot] != '.') {
+      continue;
+    }
+
+    // starts at one past the dot
+    const auto* p = name.data() + name.size() - extensionLength;
+
+    // set to false as soon as a character doesn't match
+    bool found = true;
+
+    // for each character in extension
+    for (std::size_t c=0; c<extensionLength; ++c) {
+      // checking both lowercase and uppercase
+      if (*p != extensionsLC[i][c] && *p != extensionsUC[i][c]) {
+        // neither
+        found = false;
+        break;
+      }
+
+      // matches, check next
+      ++p;
+    }
+
+    if (found) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool shouldAddToInverseTree(std::string_view name)
+{
+  static std::array<std::string_view, 3> extensionsLC{"exe", "dll"};
+  static std::array<std::string_view, 3> extensionsUC{"EXE", "DLL"};
+
+  // must be changed if any extension longer than 3 letters is added
+  constexpr std::size_t longestExtension = 3;
+
+  return extensionMatchesCI<longestExtension>(name, extensionsLC, extensionsUC);
+}
+
 
 namespace spdlog {
   namespace sinks {
@@ -613,8 +681,7 @@ BOOL WINAPI VirtualLinkFile(LPCWSTR source, LPCWSTR destination,
         bfs::path(destination), usvfs::RedirectionDataLocal(sourceU8),
         !(flags & LINKFLAG_FAILIFEXISTS));
 
-    std::string fileExt = ba::to_lower_copy(bfs::extension(sourceU8));
-    if (extensions.find(fileExt) != extensions.end()) {
+    if (shouldAddToInverseTree(sourceU8)) {
       std::string destinationU8
           = ush::string_cast<std::string>(destination, ush::CodePage::UTF8);
 
@@ -702,9 +769,7 @@ BOOL WINAPI VirtualLinkDirectoryStatic(LPCWSTR source, LPCWSTR destination, unsi
               bfs::path(destination) / nameU8,
               usvfs::RedirectionDataLocal(sourceU8 + nameU8), true);
 
-          std::string fileExt = ba::to_lower_copy(bfs::extension(nameU8));
-
-          if (extensions.find(fileExt) != extensions.end()) {
+          if (shouldAddToInverseTree(nameU8)) {
             std::string destinationU8 = ush::string_cast<std::string>(
                                             destination, ush::CodePage::UTF8)
                                         + "\\";

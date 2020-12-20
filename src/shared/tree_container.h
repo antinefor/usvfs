@@ -133,16 +133,20 @@ public:
     const fs::path &name, const T &data,
     TreeFlags flags = 0, bool overwrite = true)
   {
-    try
-    {
-      return addNode(
-        m_TreeMeta->tree.get(), name, name.begin(),
-        data, overwrite, flags, allocator());
-    }
-    catch (const bi::bad_alloc&)
-    {
+    for (;;) {
+      DecomposablePath dp(name.string());
+
+      try
+      {
+        return addNode(
+          m_TreeMeta->tree.get(), dp,
+          data, overwrite, flags, allocator());
+      }
+      catch (const bi::bad_alloc&)
+      {
+      }
+
       reassign();
-      return addFile(name, data, flags, overwrite);
     }
   }
 
@@ -160,16 +164,20 @@ public:
     const fs::path &name, const T &data,
     TreeFlags flags = 0, bool overwrite = true)
   {
-    try
-    {
-      return addNode(
-        m_TreeMeta->tree.get(), name, name.begin(), data,
-        overwrite, flags | FLAG_DIRECTORY, allocator());
-    }
-    catch (const bi::bad_alloc &)
-    {
+    for (;;) {
+      DecomposablePath dp(name.string());
+
+      try
+      {
+        return addNode(
+          m_TreeMeta->tree.get(), dp, data,
+          overwrite, flags | FLAG_DIRECTORY, allocator());
+      }
+      catch (const bi::bad_alloc &)
+      {
+      }
+
       reassign();
-      return addDirectory(name, data, flags, overwrite);
     }
   }
 
@@ -208,7 +216,7 @@ private:
 
   template <typename T>
   TreeT *createSubNode(
-    const VoidAllocatorT &allocator, const std::string &name,
+    const VoidAllocatorT &allocator, std::string_view name,
     unsigned long flags, const T &data)
   {
     auto* manager = allocator.get_segment_manager();
@@ -226,48 +234,47 @@ private:
 
   template <typename T>
   typename TreeT::NodePtrT addNode(
-    TreeT *base, const fs::path &name, fs::path::iterator iter,
+    TreeT *base, DecomposablePath& path,
     const T &data, bool overwrite, unsigned int flags,
     const VoidAllocatorT &allocator)
   {
-    fs::path::iterator next = nextIter(iter, name.end());
-    StringT iterString(iter->string().c_str(), allocator);
+    if (path.last()) {
+      typename TreeT::NodePtrT newNode = base->node(path.current());
 
-    if (next == name.end()) {
-      typename TreeT::NodePtrT newNode = base->node(iter->string().c_str());
-
-      if (newNode.get() == nullptr) {
+      if (!newNode) {
         // last name component, should be the filename
-        TreeT *node = createSubNode(allocator, iter->string(), flags, data);
+        TreeT *node = createSubNode(allocator, path.current(), flags, data);
         newNode = createSubPtr(node);
         newNode->m_Self = TreeT::WeakPtrT(newNode);
         newNode->m_Parent = base->m_Self;
-        base->set(iterString, newNode);
+        base->set(StringT(path.current(), allocator), newNode);
         return newNode;
       } else if (overwrite) {
         newNode->m_Data = createData<TreeT::DataT, T>(data, allocator);
         newNode->m_Flags = static_cast<usvfs::shared::TreeFlags>(flags);
         return newNode;
       } else {
-        auto res = base->m_Nodes.insert(std::make_pair(iterString, newNode));
-        return res.second ? newNode : TreeT::NodePtrT();
+        // the node is already in the tree, overwrite is false, nothing to do
+        return {};
       }
     } else {
       // not last component, continue search in child node
-      auto subNode = base->m_Nodes.find(iterString);
+      auto subNode = base->m_Nodes.find(path.current());
 
       if (subNode == base->m_Nodes.end()) {
         typename TreeT::NodePtrT newNode = createSubPtr(createSubNode(
-          allocator, iter->string(),
+          allocator, path.current(),
           FLAG_DIRECTORY | FLAG_DUMMY, createEmpty()));
 
-        subNode = base->m_Nodes.insert(std::make_pair(iterString, newNode)).first;
+        subNode = base->m_Nodes.emplace(StringT(path.current(), allocator), newNode).first;
         subNode->second->m_Self = TreeT::WeakPtrT(subNode->second);
         subNode->second->m_Parent = base->m_Self;
       }
 
+      path.next();
+
       return addNode(
-        subNode->second.get().get(), name, next,
+        subNode->second.get().get(), path,
         data, overwrite, flags, allocator);
     }
   }
