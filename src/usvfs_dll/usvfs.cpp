@@ -522,13 +522,13 @@ void WINAPI DisconnectVFS()
   }
 
   spdlog::get("usvfs")->debug("remove from process {}", GetCurrentProcessId());
+
   if (manager != nullptr) {
-    spdlog::get("usvfs")->debug("manager not null");
     delete manager;
     manager = nullptr;
   }
+
   if (context != nullptr) {
-    spdlog::get("usvfs")->debug("context not null");
     delete context;
     context = nullptr;
     spdlog::get("usvfs")->debug("vfs unloaded");
