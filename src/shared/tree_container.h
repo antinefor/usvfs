@@ -627,11 +627,6 @@ private:
   //
   void createNewBlock(std::vector<std::string>& deadSHMNames)
   {
-    // how many blocks are checked above the current one; the very next block
-    // should always be available, so the loop should really only ever run once,
-    // but this is just in case
-    constexpr int Tries = 10;
-
     // the current block is now considered stale, so make sure other processes
     // are aware of it and try to find the new block
     //
@@ -639,42 +634,32 @@ private:
     //       can pick up this flag before the next block has been created
     m_TreeMeta->outdated = true;
 
-    std::string nextName = m_SHMName;
+    // the shm name is something like "mod_organizer_3", which becomes
+    // "mod_organizer_4"
+    const std::string nextName = followupName(m_SHMName);
+    spdlog::get("usvfs")->info("creating {0}", nextName);
 
-    for (int i=0; i<Tries; ++i) {
-      // the shm name is something like "mod_organizer_3", which becomes
-      // "mod_organizer_4"
-      nextName = followupName(nextName);
-      spdlog::get("usvfs")->info("creating {0}", nextName);
+    SharedMemoryT* shm = createSHM(nextName, m_SHM->get_size() * 2);
 
-      SharedMemoryT* shm = createSHM(nextName, m_SHM->get_size() * 2);
-
-      if (!shm) {
-        // this shouldn't happen
-        spdlog::get("usvfs")->error("failed to create {0}", nextName);
-        continue;
-      }
-
-      spdlog::get("usvfs")->info("{0} created, activating", nextName);
-      const auto deadSHMName = activateSHM(shm, nextName);
-
-      // if this process was the last user of the previous block, it must be
-      // deallocated, but only after this whole thing is finished, because it
-      // can end up calling reassign() again
-      if (deadSHMName) {
-        spdlog::get("usvfs")->info("will destroy {0}", *deadSHMName);
-        deadSHMNames.push_back(*deadSHMName);
-      }
-
-      spdlog::get("usvfs")->info(
-        "tree {0} size now {1}", m_SHMName, byte_string(m_SHM->get_size()));
-
-      // done
-      return;
+    if (!shm) {
+      // this shouldn't happen
+      spdlog::get("usvfs")->error("failed to create {0}", nextName);
+      throw std::exception("cannot create block");
     }
 
-    // failed, can't really do anything about it
-    throw std::exception("cannot create shm");
+    spdlog::get("usvfs")->info("{0} created, activating", nextName);
+    const auto deadSHMName = activateSHM(shm, nextName);
+
+    // if this process was the last user of the previous block, it must be
+    // deallocated, but only after this whole thing is finished, because it
+    // can end up calling reassign() again
+    if (deadSHMName) {
+      spdlog::get("usvfs")->info("will destroy {0}", *deadSHMName);
+      deadSHMNames.push_back(*deadSHMName);
+    }
+
+    spdlog::get("usvfs")->info(
+      "tree {0} size now {1}", m_SHMName, byte_string(m_SHM->get_size()));
   }
 };
 
