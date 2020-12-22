@@ -131,4 +131,17 @@ std::wstring to_upper(const std::wstring &input)
   return result;
 }
 
+std::string byte_string(std::size_t n)
+{
+  auto s = std::to_string(n);
+  auto p = s.size();
+
+  while (p > 3) {
+    p -= 3;
+    s.insert(p, 1, ',');
+  }
+
+  return s + " B";
+}
+
 } // namespace

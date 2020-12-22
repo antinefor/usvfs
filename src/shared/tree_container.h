@@ -6,11 +6,52 @@
 namespace usvfs::shared
 {
 
-/**
-* smart pointer to DirectoryTrees (only intended for top-level nodes). This will
-* transparently switch to new shared memory regions in case
-* they get reallocated
-*/
+// smart pointer to DirectoryTrees (only intended for top-level nodes). This
+// will transparently switch to new shared memory regions in case they get
+// reallocated
+//
+//
+// reassign() is called from a variety of places when the current chunk of
+// shared memory is full or is marked as being outdated; its job is to either
+// find another chunk that may have been created by another process or to create
+// a brand new one
+//
+//
+// if there is only a single process hooked, it will slowly fill up the shared
+// memory when adding files, eventually throw a bi::bad_alloc and end up in
+// reassign(); a new block will be allocated, the data copied over, and the old
+// block will be deallocated
+//
+//
+// when multiple processes are involved, things are more complicated
+//
+// two processes A and B will start by using the same shared memory, but they
+// have their own pointer to it that's local to the process (the `m_TreeMeta`
+// member variable)
+//
+// so when process A fills up the shared memory and reallocates it, process B
+// is still pointing to the old shared memory; only when process B does some
+// operation that accesses the file tree will the pointer be checked and
+// adjusted to point to the new shared memory
+//
+// in this example, when process A ran out of memory, it set `outdated` to
+// `true` in the shared memory block, allocated a new one and copied the data
+// over, but it did not deallocate the block because process B is still
+// pointing to it
+//
+// when process B tries to access the block, it checks `outdated` (see get());
+// if it's true, it means that it's pointing to an outdated shared memory block
+// and must find the new one that process A created
+//
+// the new block is not necessarily the very next name, it is possible for
+// process A to burn through a series of blocks quickly when adding a bunch of
+// new files, and these blocks will all have been deallocated by the time
+// process B tries to find the newest one
+//
+// so when a process sees its block as outdated, it will try to open a bunch of
+// names until one exists that is not outdated; if it can't find the block
+// (shouldn't happen), it will just create a new one
+//
 template <typename TreeT>
 class TreeContainer
 {
@@ -41,11 +82,13 @@ public:
 
     // creates a new memory block if this is the first process to run or attach
     // to an already existing one
-    createOrOpen(m_SHMName.c_str(), size);
+    createOrOpen(m_SHMName, size);
 
     spdlog::get("usvfs")->info(
       "attached to {0} with {1} nodes, size {2}",
-      m_SHMName, m_TreeMeta->tree->numNodesRecursive(), m_SHM->get_size());
+      m_SHMName,
+      m_TreeMeta->tree->numNodesRecursive(),
+      byte_string(m_SHM->get_size()));
   }
 
   TreeContainer(const TreeContainer&) = delete;
@@ -95,7 +138,8 @@ public:
   const TreeT *get() const
   {
     if (m_TreeMeta->outdated) {
-      reassign();
+      // safe const_cast, TreeContainer are never created const
+      const_cast<TreeContainer<TreeT>*>(this)->reassign();
     }
 
     return m_TreeMeta->tree.get();
@@ -322,27 +366,62 @@ private:
 
   // see activateSHM() for return value
   //
-  std::optional<std::string> createOrOpen(const char *SHMName, size_t size)
+  std::optional<std::string> createOrOpen(const std::string& SHMName, size_t size)
   {
-    SharedMemoryT *newSHM;
+    SharedMemoryT* newSHM = openSHM(SHMName);
 
-    try
-    {
-      newSHM = new SharedMemoryT(bi::open_only, SHMName);
-
+    if (newSHM) {
       spdlog::get("usvfs")->info(
         "{} opened in process {}", SHMName, ::GetCurrentProcessId());
-    }
-    catch (const bi::interprocess_exception&)
-    {
-      newSHM = new SharedMemoryT(
-        bi::create_only, SHMName, static_cast<unsigned int>(size));
+    } else {
+      newSHM = createSHM(SHMName, size);
 
-      spdlog::get("usvfs")->info(
-        "{} created in process {}", SHMName, ::GetCurrentProcessId());
+      if (newSHM) {
+        spdlog::get("usvfs")->info(
+          "{} created in process {}", SHMName, ::GetCurrentProcessId());
+      }
+    }
+
+    if (!newSHM) {
+      spdlog::get("usvfs")->error(
+        "failed to create or open {} in process {}",
+        SHMName, ::GetCurrentProcessId());
+
+      throw std::exception("no shm instance");
     }
 
     return activateSHM(newSHM, SHMName);
+  }
+
+  // see activateSHM() for return value
+  //
+  SharedMemoryT* createSHM(const std::string& SHMName, size_t size)
+  {
+    try
+    {
+      return new SharedMemoryT(
+        bi::create_only, SHMName.c_str(), static_cast<unsigned int>(size));
+    }
+    catch (const bi::interprocess_exception&)
+    {
+    }
+
+    return nullptr;
+  }
+
+  // see activateSHM() for return value
+  //
+  SharedMemoryT* openSHM(const std::string& SHMName)
+  {
+    try
+    {
+      return new SharedMemoryT(bi::open_only, SHMName.c_str());
+    }
+    catch (const bi::interprocess_exception&)
+    {
+    }
+
+    return nullptr;
   }
 
   // makes the given shm current, returns the name of the previous shm block
@@ -351,7 +430,8 @@ private:
   //
   // see reassign()
   //
-  std::optional<std::string> activateSHM(SharedMemoryT *shm, const char *SHMName)
+  std::optional<std::string> activateSHM(
+    SharedMemoryT *shm, const std::string& SHMName)
   {
     std::shared_ptr<SharedMemoryT> oldSHM = m_SHM;
 
@@ -386,12 +466,11 @@ private:
     return deadSHMName;
   }
 
-  std::string followupName() const
+  static std::string followupName(const std::string& currentName)
   {
     std::regex pattern(R"exp((.*_)(\d+))exp");
-    std::string shmName(m_SHMName.c_str()); // need to copy because the regex result will be iterators into this string
     std::smatch match;
-    regex_match(shmName, match, pattern);
+    regex_match(currentName, match, pattern);
 
     if (match.size() != 3) {
       USVFS_THROW_EXCEPTION(usage_error() << ex_msg("shared memory name invalid"));
@@ -415,57 +494,6 @@ private:
     }
   }
 
-  // ====
-  // careful: reassign() is re-entrant, see the part about destroying blocks at
-  // the bottom of this comment
-  // ====
-  //
-  //
-  // reassign() is called from a variety of places above when the current chunk
-  // of shared memory is full or is marked as being outdated; its job is to
-  // either find another chunk that may have been created by another process
-  // or to create a brand new one
-  //
-  //
-  // if there is only a single process hooked, it will slowly fill up the shared
-  // memory when adding files, eventually throw a bi::bad_alloc and end up here;
-  // followupName() will return a new, unused name for the shared memory and
-  // createOrOpen() will create it and copy the old data to it
-  //
-  // because there is only one process, the old shared memory will be considered
-  // unused and createOrOpen() will return the name of the old, now dead shared
-  // memory object, which will be deleted at the end of reassign()
-  //
-  //
-  // when multiple processes are involved, things are more complicated
-  //
-  // two processes A and B will start by using the same shared memory, but they
-  // have their own pointer to it that's local to the process (the `m_TreeMeta`
-  // member variable)
-  //
-  // so when process A fills up the shared memory and reallocates it, process B
-  // is still pointing to the old shared memory; only when process B does some
-  // operation that accesses the file tree will the pointer be checked and
-  // adjusted to point to the new shared memory
-  //
-  // in this example, when process A ran out of memory, it set `outdated` to
-  // `true` in the shared memory block, allocated a new one and copied the data
-  // over, but it did not deallocate the block because process B is still
-  // pointing to it
-  //
-  // when process B tries to access the block, it checks `outdated` (see get()
-  // way above); if it's true, it means that it's pointing to an outdated shared
-  // memory block and must find the new one that process A created
-  //
-  //
-  // todo, bug: process A may have created _multiple_ shared memory blocks by
-  // the time reassign() is called in process B, but all of these blocks except
-  // the last one may have already been deallocated, so process B will end up
-  // creating a new block in between
-  //
-  // blocks should only be deallocated when all the blocks _below_ it are unused
-  //
-  //
   // re-entrancy: every time a process switches to a new shared memory block, it
   // will know whether it was the last process to have a handle to it; when that
   // happens, the block will be destroyed to avoid leaking it
@@ -484,53 +512,154 @@ private:
   // a valid block, so all the names of the dead shared memory blocks are kept
   // in a vector and deallocated at the very end
   //
-  void reassign() const
+  void reassign()
   {
-    // safe const_cast, TreeContainer are never created const
-    auto *self = const_cast<TreeContainer<TreeT>*>(this);
-
-    // reassign() was called because the block is full, in which case a new one
-    // will be created and the current one becomes outdated
-    //
-    // reassign() can also be called because `outdated` was already true
-    self->m_TreeMeta->outdated = true;
-
     // list of all the shared memory blocks that are now unused and can be
     // destroyed
     std::vector<std::string> deadSHMNames;
 
-    for (;;) {
+    if (m_TreeMeta->outdated) {
+      // this block was marked as outdated, which should only happen when
+      // another process has ran out of memory and started allocating blocks
+      // with higher numbers
+
+      spdlog::get("usvfs")->info(
+        "tree {0} is outdated, looking for another one", m_SHMName);
+
+      if (findNewerBlock(deadSHMNames)) {
+        // the new block was found and activated
+        return;
+      }
+    } else {
+      // this block isn't outdated, so reassign() was called because a bad_alloc
+      // exception was thrown
+      spdlog::get("usvfs")->info(
+        "ran out of memory in tree {0}, will create another one", m_SHMName);
+    }
+
+    // either the block is full or it's outdated, but no higher block was found;
+    // just create a new one
+
+    createNewBlock(deadSHMNames);
+
+    // remove the old shared memory blocks; this can be recursive and call
+    // reassign() again, but it's safe at this point
+    for (const std::string& name : deadSHMNames) {
+      spdlog::get("usvfs")->info("destroying {0}", name);
+      bi::shared_memory_object::remove(name.c_str());
+    }
+  }
+
+  // tries a series of shm names above the current one in the hope of finding
+  // the most recent one
+  //
+  // if the new block was found and activated correctly, returns true
+  //
+  // when findNewerBlock() returns false, this container will either still be
+  // pointing to the same, outdated block as it started with, or it might have
+  // moved up to another outdated block, but it will always be pointing to
+  // a valid block in memory
+  //
+  bool findNewerBlock(std::vector<std::string>& deadSHMNames)
+  {
+    // how many blocks are checked above the current one; it's unlikely there
+    // will ever be more than 15 to 20 blocks allocated, but this is high
+    // because it's really the only way to keep processes connected to the same
+    // shm block, so processes must not fail to find the next one
+    constexpr int Tries = 100;
+
+    std::string nextName = m_SHMName;
+
+    for (int i=0; i<Tries; ++i) {
       // the shm name is something like "mod_organizer_3", which becomes
       // "mod_organizer_4"
-      const std::string nextName = followupName();
+      nextName = followupName(nextName);
+      spdlog::get("usvfs")->info("opening {0}", nextName);
 
-      // this creates the new block if it doesn't exist or open it if it does
-      const auto deadSHMName = self->createOrOpen(
-        nextName.c_str(), m_SHM->get_size() * 2);
+      // open the shm, see if it exists
+      SharedMemoryT* shm = openSHM(nextName);
+
+      if (!shm) {
+        // this is not necessarily an error, another process might have created
+        // a bunch of blocks and destroyed them before this process had a chance
+        // to see them, so just keep going
+        spdlog::get("usvfs")->info("{0} doesn't exist", nextName);
+        continue;
+      }
+
+      spdlog::get("usvfs")->info("{0} exists, activating", nextName);
+      const auto deadSHMName = activateSHM(shm, nextName);
 
       // if this process was the last user of the previous block, it must be
       // deallocated, but only after this whole thing is finished, because it
       // can end up calling reassign() again
       if (deadSHMName) {
+        spdlog::get("usvfs")->info("will destroy {0}", *deadSHMName);
         deadSHMNames.push_back(*deadSHMName);
       }
 
       // another process might have already created this block, run out of
       // memory and created more, so make sure to only stop when finding a block
       // that's not outdated
-      if (!m_TreeMeta->outdated) {
-        break;
+      if (m_TreeMeta->outdated) {
+        spdlog::get("usvfs")->info("{0} is also outdated", nextName);
+      } else {
+        // shm opened correctly, activated and not outdated, done
+        spdlog::get("usvfs")->info(
+          "{0} not outdated, taking it, size now {1}",
+          nextName, byte_string(m_SHM->get_size()));
+
+        return true;
       }
     }
 
-    spdlog::get("usvfs")->info(
-      "tree {0} size now {1} bytes", m_SHMName, m_SHM->get_size());
+    // this block is outdated, but no other valid block was found above; this
+    // shouldn't happen, but just create a new block to make sure programs can
+    // still run
 
-    // remove the old shared memory blocks; this can be recursive and call
-    // reassign() again, but it's safe at this point
-    for (const std::string& name : deadSHMNames) {
-      bi::shared_memory_object::remove(name.c_str());
+    spdlog::get("usvfs")->error(
+      "found no existing tree above {0}, will create a new one", m_SHMName);
+
+    return false;
+  }
+
+  // creates a new block and activates it, throws on failure
+  //
+  void createNewBlock(std::vector<std::string>& deadSHMNames)
+  {
+    // the current block is now considered stale, so make sure other processes
+    // are aware of it and try to find the new block
+    //
+    // todo: there really should be some synchronization here, another process
+    //       can pick up this flag before the next block has been created
+    m_TreeMeta->outdated = true;
+
+    // the shm name is something like "mod_organizer_3", which becomes
+    // "mod_organizer_4"
+    const std::string nextName = followupName(m_SHMName);
+    spdlog::get("usvfs")->info("creating {0}", nextName);
+
+    SharedMemoryT* shm = createSHM(nextName, m_SHM->get_size() * 2);
+
+    if (!shm) {
+      // this shouldn't happen
+      spdlog::get("usvfs")->error("failed to create {0}", nextName);
+      throw std::exception("cannot create block");
     }
+
+    spdlog::get("usvfs")->info("{0} created, activating", nextName);
+    const auto deadSHMName = activateSHM(shm, nextName);
+
+    // if this process was the last user of the previous block, it must be
+    // deallocated, but only after this whole thing is finished, because it
+    // can end up calling reassign() again
+    if (deadSHMName) {
+      spdlog::get("usvfs")->info("will destroy {0}", *deadSHMName);
+      deadSHMNames.push_back(*deadSHMName);
+    }
+
+    spdlog::get("usvfs")->info(
+      "tree {0} size now {1}", m_SHMName, byte_string(m_SHM->get_size()));
   }
 };
 
