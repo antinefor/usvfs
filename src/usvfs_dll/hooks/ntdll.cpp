@@ -479,7 +479,7 @@ std::string toHex(PVOID buffer, ULONG size)
 //
 bool isDeviceFile(std::wstring_view name)
 {
-  static const std::wstring_view const DevicePrefix(L"\\Device\\");
+  static const std::wstring_view DevicePrefix(L"\\Device\\");
 
   // starts with
   const std::size_t n = std::min(name.size(), DevicePrefix.size());
