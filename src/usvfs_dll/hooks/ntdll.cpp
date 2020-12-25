@@ -457,6 +457,36 @@ std::string toHex(PVOID buffer, ULONG size)
   return stream.str();
 }
 
+// Something is trying to create a variety of files starting with "\Device\",
+// such as "\Device\DeviceApi\Dev\Query", "\Device\MMCSS\MmThread",
+// "\Device\DeviceApi\CMNotify", etc.
+//
+// This used to create a bunch of spurious "Device" and "MMCSS" folders when
+// using Explorer++. Some of these names seem to part of PnP, others from the
+// "Multimedia Class Scheduler Service".
+//
+// There's basically zero information on this stuff online.
+//
+// Regardless, these files ended up being rerouted, so they became something
+// like C:\game\Data\Somewhere\Device\MMCSS\MmThread, which ended up being
+// rerouted to overwrite and created as a fake path
+// "overwrite\Somewhere\Device\MMCSS"
+//
+// These paths are weird, they feel like pipes or something. It's not clear how
+// they should be reliably recognized, so this is a hardcoded check for any
+// path that starts with "\Device\". These paths will be forwarded directory
+// to NtCreateFile/NtOpenFile
+//
+bool isDeviceFile(std::wstring_view name)
+{
+  static const std::wstring_view DevicePrefix(L"\\Device\\");
+
+  // starts with
+  const std::size_t n = std::min(name.size(), DevicePrefix.size());
+  return (std::wcsncmp(name.data(), DevicePrefix.data(), n) == 0);
+}
+
+
 NTSTATUS addNtSearchData(HANDLE hdl, PUNICODE_STRING FileName,
                          const std::wstring &fakeName,
                          FILE_INFORMATION_CLASS FileInformationClass,
@@ -1066,6 +1096,11 @@ NTSTATUS ntdll_mess_NtOpenFile(PHANDLE FileHandle,
 
   UnicodeString fullName = CreateUnicodeString(ObjectAttributes);
 
+  if (isDeviceFile(static_cast<LPCWSTR>(fullName))) {
+    return ::NtOpenFile(FileHandle, DesiredAccess, ObjectAttributes,
+      IoStatusBlock, ShareAccess, OpenOptions);
+  }
+
   UnicodeString Path = ntdllHandleTracker.lookup(ObjectAttributes->RootDirectory);
 
   std::wstring checkpath = ush::string_cast<std::wstring>(
@@ -1163,6 +1198,13 @@ NTSTATUS ntdll_mess_NtCreateFile(
                           IoStatusBlock, AllocationSize, FileAttributes,
                           ShareAccess, CreateDisposition, CreateOptions,
                           EaBuffer, EaLength);
+  }
+
+  if (isDeviceFile(inPathW)) {
+    return ::NtCreateFile(FileHandle, DesiredAccess, ObjectAttributes,
+      IoStatusBlock, AllocationSize, FileAttributes,
+      ShareAccess, CreateDisposition, CreateOptions,
+      EaBuffer, EaLength);
   }
 
   DWORD convertedDisposition = OPEN_EXISTING;
