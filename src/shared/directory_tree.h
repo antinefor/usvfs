@@ -65,16 +65,11 @@ void advanceIter(fs::path::iterator &iter, const fs::path::iterator &end);
 class DecomposablePath
 {
 public:
-  // the given string_view is not copied, it must stay alive
-  //
-  explicit DecomposablePath(std::string_view s)
-    : m_s(s), m_begin(0), m_end(0)
+  explicit DecomposablePath(std::string s)
+    : m_s(std::move(s)), m_begin(0), m_end(0)
   {
     m_end = nextSeparator(m_begin);
   }
-
-  template <class T>
-  DecomposablePath(T&&) = delete;
 
   // move to the next component, returns false when there are no more components
   //
@@ -120,7 +115,7 @@ public:
   }
 
 private:
-  std::string_view m_s;
+  const std::string m_s;
   std::size_t m_begin, m_end;
 
   // finds the next path separator

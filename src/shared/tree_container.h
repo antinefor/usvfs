@@ -178,9 +178,7 @@ public:
     TreeFlags flags = 0, bool overwrite = true)
   {
     for (;;) {
-      // the string must stay alive
-      const std::string s = name.string();
-      DecomposablePath dp{std::string_view{s}};
+      DecomposablePath dp(name.string());
 
       try
       {
@@ -211,9 +209,7 @@ public:
     TreeFlags flags = 0, bool overwrite = true)
   {
     for (;;) {
-      // the string must stay alive
-      const std::string s = name.string();
-      DecomposablePath dp{std::string_view{s}};
+      DecomposablePath dp(name.string());
 
       try
       {
