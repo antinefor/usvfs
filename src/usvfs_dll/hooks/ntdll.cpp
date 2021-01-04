@@ -482,8 +482,11 @@ bool isDeviceFile(std::wstring_view name)
   static const std::wstring_view DevicePrefix(L"\\Device\\");
 
   // starts with
-  const std::size_t n = std::min(name.size(), DevicePrefix.size());
-  return (std::wcsncmp(name.data(), DevicePrefix.data(), n) == 0);
+  if (name.size() < DevicePrefix.size()) {
+    return false;
+  } else {
+    return (_wcsnicmp(name.data(), DevicePrefix.data(), DevicePrefix.size()) == 0);
+  }
 }
 
 

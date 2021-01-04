@@ -201,9 +201,16 @@ public:
     template <typename U, typename V>
     bool operator() (const U &lhs, const V &rhs) const
     {
+      const size_t lhsLength = getLength(lhs);
+      const size_t rhsLength = getLength(rhs);
+
       const auto r = _strnicmp(
         getCharPtr(lhs), getCharPtr(rhs),
-        std::min(getLength(lhs), getLength(rhs)));
+        std::min(lhsLength, rhsLength));
+
+      if (r == 0) {
+        return lhsLength < rhsLength;
+      }
 
       return (r < 0);
     }
