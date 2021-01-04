@@ -73,6 +73,9 @@ public:
     m_end = nextSeparator(m_begin);
   }
 
+  template <class T>
+  DecomposablePath(T&&) = delete;
+
   // move to the next component, returns false when there are no more components
   //
   bool next()
