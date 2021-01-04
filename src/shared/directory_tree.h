@@ -73,22 +73,43 @@ public:
     m_end = nextSeparator(m_begin);
   }
 
-  // move to the next component, undefined if last() is true
+  // move to the next component, returns false when there are no more components
   //
-  void next()
+  bool next()
   {
-    m_begin = m_end + 1;
-    m_end = nextSeparator(m_begin);
+    for (;;) {
+      if (m_end >= m_s.size()) {
+        // done
+        m_begin = m_end;
+        return false;
+      }
+
+      // move begin to one past the last separator found
+      m_begin = m_end + 1;
+
+      // find the next separator
+      m_end = nextSeparator(m_begin);
+
+      // check for components that should be ignored:
+      //  - empty, happens when the path ends with a separator
+      //  - slashes, happens with consecutive separators
+      //  - dot, unnecessary
+      const auto c = current();
+      if (!c.empty() && c != "\\" && c != "/" && c != ".") {
+        return true;
+      }
+    }
   }
 
-  // whether this is the last component
+  // checks if next() would return false
   //
-  bool last() const
+  bool peekNext() const
   {
-    return (m_end >= m_s.size());
+    auto copy = *this;
+    return copy.next();
   }
 
-  // the current component
+  // the current component, empty when next() returned false
   //
   std::string_view current() const
   {

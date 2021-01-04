@@ -474,7 +474,7 @@ std::string toHex(PVOID buffer, ULONG size)
 //
 // These paths are weird, they feel like pipes or something. It's not clear how
 // they should be reliably recognized, so this is a hardcoded check for any
-// path that starts with "\Device\". These paths will be forwarded directory
+// path that starts with "\Device\". These paths will be forwarded directly
 // to NtCreateFile/NtOpenFile
 //
 bool isDeviceFile(std::wstring_view name)
