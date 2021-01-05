@@ -282,7 +282,7 @@ private:
     const T &data, bool overwrite, unsigned int flags,
     const VoidAllocatorT &allocator)
   {
-    if (path.last()) {
+    if (!path.peekNext()) {
       typename TreeT::NodePtrT newNode = base->node(path.current());
 
       if (!newNode) {
