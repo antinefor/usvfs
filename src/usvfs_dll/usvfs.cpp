@@ -649,7 +649,7 @@ bool assertPathExists(usvfs::RedirectionTreeContainer &table, LPCWSTR path)
           = current->data().linkTarget.size() > 0
                 ? bfs::path(current->data().linkTarget.c_str()) / *iter
                 : *iter / "\\";
-      if (is_directory(targetPath)) {
+      if (exists(targetPath)) {
         usvfs::RedirectionTree::NodePtrT newNode = table.addDirectory(
             current->path() / *iter, targetPath.string().c_str(),
             ush::FLAG_DUMMY, false);
