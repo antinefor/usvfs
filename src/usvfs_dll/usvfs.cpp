@@ -649,7 +649,11 @@ bool assertPathExists(usvfs::RedirectionTreeContainer &table, LPCWSTR path)
           = current->data().linkTarget.size() > 0
                 ? bfs::path(current->data().linkTarget.c_str()) / *iter
                 : *iter / "\\";
-      if (exists(targetPath)) {
+      // ensure the path is either a directory, a symlink or a reparse point
+      // fixes wine compatibility as well as exotic windows setups.
+      // see pull request #47
+      if (is_directory(targetPath) || is_symlink(targetPath) ||
+	  status(targetPath).type() == bfs::file_type::reparse_file) {
         usvfs::RedirectionTree::NodePtrT newNode = table.addDirectory(
             current->path() / *iter, targetPath.string().c_str(),
             ush::FLAG_DUMMY, false);
