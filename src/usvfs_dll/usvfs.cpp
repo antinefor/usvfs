@@ -649,7 +649,15 @@ bool assertPathExists(usvfs::RedirectionTreeContainer &table, LPCWSTR path)
           = current->data().linkTarget.size() > 0
                 ? bfs::path(current->data().linkTarget.c_str()) / *iter
                 : *iter / "\\";
-      if (is_directory(targetPath)) {
+
+      // is_directory returns false for symlinks and reparse points,
+      // which causes this function to fail if the target path contains
+      // either of those. paths containing reparse points is a common
+      // scenario when running under Wine, so check for those explicitly.
+      // this check could have a false positive if the path contains a
+      // symlink to a file, but such a scenario is extremely unlikely.
+      if (is_directory(targetPath) || is_symlink(targetPath) ||
+	  status(targetPath).type() == bfs::file_type::reparse_file) {
         usvfs::RedirectionTree::NodePtrT newNode = table.addDirectory(
             current->path() / *iter, targetPath.string().c_str(),
             ush::FLAG_DUMMY, false);
