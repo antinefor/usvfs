@@ -178,6 +178,16 @@ private:
   static const int SIZE_OF_JUMP = 5;
 #endif
 
+  // the hook lib tries to allocate buffer close to the hooked functions,
+  // for 32-bits application, this often falls on 0x40000000, which is the
+  // address at which DLLs can be loaded on Windows
+  //
+  // some old-style DRM (e.g. Dragon Age 2) check that address and prevent
+  // the game from running if it's not 0x40000000, so we give them a bit of
+  // spaces before allocating our buffers
+  //
+  static constexpr uintptr_t MIN_ALLOC_ADDR = 0x40000000 + 0x200000;
+
   static TrampolinePool *s_Instance;
 
   bool m_FullBlock {false};

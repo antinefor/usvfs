@@ -509,8 +509,8 @@ TrampolinePool::BufferMap::iterator TrampolinePool::allocateBuffer(LPVOID addres
   }
 
   uintptr_t start = std::max(
-      lowerEnd,
-      reinterpret_cast<uintptr_t>(sysInfo.lpMinimumApplicationAddress));
+    std::max(lowerEnd, MIN_ALLOC_ADDR),
+    reinterpret_cast<uintptr_t>(sysInfo.lpMinimumApplicationAddress));
   uintptr_t upperEnd = reinterpret_cast<uintptr_t>(rounded) + m_SearchRange;
   uintptr_t end = std::min(upperEnd, reinterpret_cast<uintptr_t>(
                                          sysInfo.lpMaximumApplicationAddress));
