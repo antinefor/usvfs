@@ -425,7 +425,7 @@ BOOL HookDisasm(THookInfo &hookInfo, HookError *error)
     // no support for relocating instruction relative addressing
     for (int i = 0; i < 3; ++i) {
       const ud_operand *op = ud_insn_opr(disasm(), i);
-      if ((op != nullptr) && (op->base == UD_R_RIP)) {
+      if ((op != nullptr) && (op->base == UD_R_RIP || op->base == UD_R_RSP)) {
         if (error != nullptr)
           *error = ERR_RIP;
         return FALSE;
