@@ -422,13 +422,23 @@ BOOL HookDisasm(THookInfo &hookInfo, HookError *error)
       return FALSE;
     }
 
-    // no support for relocating instruction relative addressing
+    // check the operands for relative addressing (not supported)
     for (int i = 0; i < 3; ++i) {
       const ud_operand *op = ud_insn_opr(disasm(), i);
-      if ((op != nullptr) && op->base == UD_R_RIP) {
-        if (error != nullptr)
-          *error = ERR_RIP;
-        return FALSE;
+      if (op) {
+        if (
+          // rip-relative are not handled, usually relative jumps
+          op->base == UD_R_RIP
+
+          // rsp-relative call are not handled (there are valid rsp-relative
+          // instructions, e.g. sub)
+          || (ud_insn_mnemonic(disasm()) == UD_Icall && op->base == UD_R_RSP)
+        ) {
+          if (error != nullptr) {
+            *error = ERR_RIP;
+          }
+          return FALSE;
+        }
       }
     }
   }
