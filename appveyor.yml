@@ -19,7 +19,11 @@ before_build:
         set-item -path Env:BOOST_LIBPATH -value ${Env:BOOST_PATH}\lib32-msvc-14.2
         set-item -path Env:GTEST_BUILDDIR -value C:\Libraries\GoogleTest\build_32
       }
-  - ps: git clone --depth=1 --branch=master https://github.com/google/googletest.git C:\libraries\googletest 2>$null; New-Item $Env:GTEST_BUILDDIR -Type directory
+  # the git clone return a failure code (according to AppVeyor), so we chain the New-Item to
+  # fix it
+  - ps: |
+      git clone --depth=1 --branch=master https://github.com/google/googletest.git C:\libraries\googletest 2>$null
+      New-Item $Env:GTEST_BUILDDIR -Type directory
   - ps: Set-Location -Path $Env:GTEST_BUILDDIR
   - cmd: >
       "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %Platform% &&
