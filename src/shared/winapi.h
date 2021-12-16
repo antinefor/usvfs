@@ -558,7 +558,7 @@ _Create<CharT>::_Create(const std::basic_string<CharT> &binaryName)
   if (binaryName.length() > MAX_PATH) {
     throw parameter_error("executable filename can't be longer than 260 characters");
   }
-  m_CommandLine << binaryName;
+  m_CommandLine << "\"" << binaryName << "\"";
 }
 
 template <typename CharT>
