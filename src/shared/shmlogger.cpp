@@ -142,8 +142,9 @@ void spdlog::sinks::shm_sink::log(const details::log_msg &msg)
 
   // blacklist %USERNAME% because PII
   static const std::string username = std::string(getenv("USERNAME"));
-  boost::algorithm::ireplace_all(message, username, "USERNAME");
-  
+  boost::algorithm::ireplace_all(message, std::string("\\") + username, "\\USERNAME");
+  boost::algorithm::ireplace_all(message, std::string("/") + username, "/USERNAME");
+
   if (message.length() > SHMLogger::MESSAGE_SIZE) {
     std::vector<std::string> splitVec;
     boost::split(splitVec, message, boost::is_any_of("\r\n"),
