@@ -27,6 +27,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #pragma warning(disable : 4996)
 
 using namespace boost::interprocess;
+using namespace boost::posix_time;
 
 SHMLogger *SHMLogger::s_Instance = nullptr;
 
