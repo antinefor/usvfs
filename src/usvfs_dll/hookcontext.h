@@ -144,6 +144,14 @@ public:
   void clearExecutableBlacklist();
   BOOL HookContext::executableBlacklisted(LPCWSTR lpApplicationName, LPCWSTR lpCommandLine) const;
 
+  void addSkipFileSuffix(const std::wstring& fileSuffix);
+  void clearSkipFileSuffixes();
+  std::vector<std::string> skipFileSuffixes() const;
+
+  void addSkipDirectory(const std::wstring& directory);
+  void clearSkipDirectories();
+  std::vector<std::string> skipDirectories () const;
+
   void forceLoadLibrary(const std::wstring &processName, const std::wstring &libraryPath);
   void clearLibraryForceLoads();
   std::vector<std::wstring> librariesToForceLoad(const std::wstring &processName);

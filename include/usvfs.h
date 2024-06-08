@@ -49,7 +49,10 @@ static const unsigned int LINKFLAG_CREATETARGET   = 0x00000004; // if set, file 
                                                                 // If there different create-target have been set for an element and one of its
                                                                 // ancestors, the inner-most create-target is used
 static const unsigned int LINKFLAG_RECURSIVE      = 0x00000008; // if set, directories are linked recursively
-
+static const unsigned int LINKFLAG_FAILIFSKIPPED  = 0x00000010; // if set, linking fails if the file or directory is skipped
+                                                                // files or directories are skipped depending on whats been added to 
+                                                                // the skip file suffixes or skip directories list in
+                                                                // the sharedparameters class, those lists are checked during virtual linking
 
 extern "C" {
 
@@ -153,6 +156,34 @@ DLLEXPORT VOID WINAPI BlacklistExecutable(LPWSTR executableName);
  * clears the executable blacklist
  */
 DLLEXPORT VOID WINAPI ClearExecutableBlacklist();
+
+/**
+ * adds a file suffix to a list to skip during file linking
+ * .txt and some_file.txt are both valid file suffixes,
+ * not to be confused with file extensions
+ * @param fileSuffix  a valid file suffix
+ */
+DLLEXPORT VOID WINAPI usvfsAddSkipFileSuffix(LPWSTR fileSuffix);
+
+/**
+ * clears the file suffix skip-list
+ */
+DLLEXPORT VOID WINAPI usvfsClearSkipFileSuffixes();
+
+/**
+ * adds a directory name that will be skipped during directory linking.
+ * Not a path. Any directory matching the name will be skipped,
+ * regardless of it's path, for example if .git is added,
+ * any sub-path or root-path containing a .git directory
+ * will have the .git directory skipped during directory linking
+ * @param directory  name of the directory
+ */
+DLLEXPORT VOID WINAPI usvfsAddSkipDirectory(LPWSTR directory);
+
+/**
+ * clears the directory skip-list
+ */
+DLLEXPORT VOID WINAPI usvfsClearSkipDirectories();
 
 /**
  * adds a library to be force loaded when the given process is injected

@@ -37,6 +37,8 @@ SharedParameters::SharedParameters(const usvfsParameters& reference,
   , m_userCount(1)
   , m_processBlacklist(allocator)
   , m_processList(allocator)
+  , m_fileSuffixSkipList(allocator)
+  , m_directorySkipList(allocator)
   , m_forcedLibraries(allocator)
 {
 }
@@ -196,6 +198,46 @@ bool SharedParameters::executableBlacklisted(
   }
 
   return false;
+}
+
+void SharedParameters::addSkipFileSuffix(const std::string& fileSuffix)
+{
+  bi::scoped_lock lock(m_mutex);
+
+  m_fileSuffixSkipList.insert(shared::StringT(fileSuffix.begin(), fileSuffix.end(),
+                                              m_fileSuffixSkipList.get_allocator()));
+}
+
+void SharedParameters::clearSkipFileSuffixes()
+{
+  bi::scoped_lock lock(m_mutex);
+  m_fileSuffixSkipList.clear();
+}
+
+std::vector<std::string> SharedParameters::skipFileSuffixes() const
+{
+  bi::scoped_lock lock(m_mutex);
+  return { m_fileSuffixSkipList.begin(), m_fileSuffixSkipList.end() };
+}
+
+void SharedParameters::addSkipDirectory(const std::string& directory) 
+{
+  bi::scoped_lock lock(m_mutex);
+
+  m_directorySkipList.insert(shared::StringT(directory.begin(), directory.end(),
+                                              m_directorySkipList.get_allocator()));
+}
+
+void SharedParameters::clearSkipDirectories() 
+{
+  bi::scoped_lock lock(m_mutex);
+  m_directorySkipList.clear();
+}
+
+std::vector<std::string> SharedParameters::skipDirectories() const
+{
+  bi::scoped_lock lock(m_mutex);
+  return { m_directorySkipList.begin(), m_directorySkipList.end() };
 }
 
 void SharedParameters::addForcedLibrary(
