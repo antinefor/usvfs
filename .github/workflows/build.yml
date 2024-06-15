@@ -17,9 +17,6 @@ jobs:
         arch: [x86, x64]
         config: [Debug, Release]
         tests: ["", "Test"]
-        exclude:
-          - config: Debug
-            tests: ""
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +39,10 @@ jobs:
       - if: matrix.tests == 'Test'
         name: Build googletest
         run: |
-          cmake -B googletest/build_${{ matrix.arch }} -A ${{ matrix.arch == 'x86' && 'Win32' || 'x64' }} googletest
+          cmake -B googletest/build_${{ matrix.arch }} `
+            -A ${{ matrix.arch == 'x86' && 'Win32' || 'x64' }} `
+            -Dgtest_force_shared_crt=ON `
+            googletest
           cmake --build googletest/build_${{ matrix.arch }} --config ${{ matrix.config }}
       - name: Build
         run: |
