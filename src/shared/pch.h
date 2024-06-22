@@ -10,6 +10,7 @@
 #include <cstring>
 #include <ctime>
 #include <exception>
+#include <format>
 #include <functional>
 #include <future>
 #include <iomanip>
@@ -29,7 +30,7 @@
 #include <vector>
 
 #ifndef NOMINMAX
-  #define NOMINMAX
+#define NOMINMAX
 #endif
 
 #define WIN32_LEAN_AND_MEAN
@@ -78,9 +79,6 @@
 #include <boost/tokenizer.hpp>
 #include <boost/type_traits.hpp>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
-#include <spdlog.h>
+#include <spdlog/spdlog.h>
 
 namespace fs = boost::filesystem;

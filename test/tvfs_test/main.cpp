@@ -37,7 +37,8 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include <windows_sane.h>
 #include <stringutils.h>
 
-#include <spdlog.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_sinks.h>
 
 #include <hookcontext.h>
 #include <unicodestring.h>
@@ -269,7 +270,7 @@ TEST_F(USVFSTest, GetFullPathNameOnRegularCurrentDirectory)
 // this function is useful to simulate a CreateFileW by internally using the hook
 // version of NtOpenFile
 //
-HANDLE hooked_NtOpenFile(LPWSTR path, ACCESS_MASK accessMask, ULONG shareAccess, ULONG openOptions)
+HANDLE hooked_NtOpenFile(LPCWSTR path, ACCESS_MASK accessMask, ULONG shareAccess, ULONG openOptions)
 {
   constexpr size_t BUFFER_SIZE = 2048;
   IO_STATUS_BLOCK statusBlock;

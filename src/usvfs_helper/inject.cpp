@@ -18,20 +18,23 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
-#include "pch.h"
-#include "inject.h"
-#include "usvfsparametersprivate.h"
-#include <winapi.h>
-#include <exceptionex.h>
-#include <loghelpers.h>
-#include <spdlog.h>
-#include <boost/filesystem.hpp>
-#include <injectlib.h>
-#include <stringutils.h>
-#include <stringcast.h>
 #include <string>
 #include <utility>
 
+#include <spdlog/spdlog.h>
+
+#include <boost/filesystem.hpp>
+
+#include <pch.h>
+#include <inject.h>
+#include <usvfsparametersprivate.h>
+#include <winapi.h>
+#include <exceptionex.h>
+#include <loghelpers.h>
+#include <injectlib.h>
+#include <stringutils.h>
+#include <stringcast.h>
+#include <formatters.h>
 
 namespace ush = usvfs::shared;
 
@@ -105,7 +108,7 @@ void usvfs::injectProcess(const std::wstring &applicationPath
                     + ush::string_cast<std::string>(preferedDll.wstring()).c_str()));
     }
 
-    spdlog::get("usvfs")->info("dll path: {}", log::wrap(dllPath.wstring()));
+    spdlog::get("usvfs")->info("dll path: {}", dllPath.wstring());
 
     InjectLib::InjectDLL(processHandle, threadHandle, dllPath.c_str(),
                          "InitHooks", &parameters, sizeof(parameters));
