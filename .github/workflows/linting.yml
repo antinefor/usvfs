@@ -1,4 +1,4 @@
-name: Lint UIBaUSVFSse
+name: Lint USVFS
 
 on:
   push:
