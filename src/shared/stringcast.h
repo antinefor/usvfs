@@ -36,25 +36,25 @@ template <typename ToT, typename FromT>
 class string_cast_impl
 {
 public:
-  static ToT cast(const FromT &source, CodePage codePage, size_t sourceLength);
+  static ToT cast(const FromT& source, CodePage codePage, size_t sourceLength);
 };
 
 template <typename ToT, typename FromT>
-ToT string_cast(FromT source
-  , CodePage codePage = CodePage::LOCAL
-  , size_t sourceLength = std::numeric_limits<size_t>::max())
+ToT string_cast(FromT source, CodePage codePage = CodePage::LOCAL,
+                size_t sourceLength = std::numeric_limits<size_t>::max())
 {
   return string_cast_impl<ToT, FromT>::cast(source, codePage, sourceLength);
 }
-
 
 template <typename ToT, typename CharT>
 class string_cast_impl<ToT, std::basic_string<CharT>>
 {
 public:
-  static ToT cast(const std::basic_string<CharT> &source, CodePage codePage, size_t sourceLength)
+  static ToT cast(const std::basic_string<CharT>& source, CodePage codePage,
+                  size_t sourceLength)
   {
-    return string_cast_impl<ToT, const CharT*>::cast(source.c_str(), codePage, sourceLength);
+    return string_cast_impl<ToT, const CharT*>::cast(source.c_str(), codePage,
+                                                     sourceLength);
   }
 };
 
@@ -64,18 +64,17 @@ class string_cast_impl<ToT, CharT*>
   BOOST_STATIC_ASSERT(!boost::is_base_and_derived<ToT, CharT>::value);
 
 public:
-  static ToT cast(CharT *source, CodePage codePage, size_t sourceLength)
+  static ToT cast(CharT* source, CodePage codePage, size_t sourceLength)
   {
     return string_cast_impl<ToT, const CharT*>::cast(source, codePage, sourceLength);
   }
 };
 
-
 template <typename ToT, typename CharT, int N>
 class string_cast_impl<ToT, CharT[N]>
 {
 public:
-  static ToT cast(CharT(&source)[N], CodePage codePage, size_t sourceLength)
+  static ToT cast(CharT (&source)[N], CodePage codePage, size_t sourceLength)
   {
     return string_cast_impl<ToT, const CharT*>::cast(source, codePage, sourceLength);
   }
@@ -83,12 +82,12 @@ public:
 
 UINT windowsCP(CodePage codePage);
 
-
 template <>
 class string_cast_impl<std::string, const wchar_t*>
 {
 public:
-  static std::string cast(const wchar_t * const &source, CodePage codePage, size_t sourceLength)
+  static std::string cast(const wchar_t* const& source, CodePage codePage,
+                          size_t sourceLength)
   {
     std::string result;
 
@@ -101,13 +100,13 @@ public:
       UINT cp = windowsCP(codePage);
       // preflight to find out the required buffer size
       int outLength = WideCharToMultiByte(cp, 0, source, static_cast<int>(sourceLength),
-        nullptr, 0, nullptr, nullptr);
+                                          nullptr, 0, nullptr, nullptr);
       if (outLength == 0) {
         throw windows_error("string conversion failed");
       }
       result.resize(outLength);
       outLength = WideCharToMultiByte(cp, 0, source, static_cast<int>(sourceLength),
-        &result[0], outLength, nullptr, nullptr);
+                                      &result[0], outLength, nullptr, nullptr);
       if (outLength == 0) {
         throw windows_error("string conversion failed");
       }
@@ -121,12 +120,12 @@ public:
   }
 };
 
-
 template <>
 class string_cast_impl<std::wstring, const char*>
 {
 public:
-  static std::wstring cast(const char * const &source, CodePage codePage, size_t sourceLength)
+  static std::wstring cast(const char* const& source, CodePage codePage,
+                           size_t sourceLength)
   {
     std::wstring result;
 
@@ -138,12 +137,14 @@ public:
       // use utf8 or local 8-bit encoding depending on user choice
       UINT cp = windowsCP(codePage);
       // preflight to find out the required source size
-      int outLength = MultiByteToWideChar(cp, 0, source, static_cast<int>(sourceLength), &result[0], 0);
+      int outLength = MultiByteToWideChar(cp, 0, source, static_cast<int>(sourceLength),
+                                          &result[0], 0);
       if (outLength == 0) {
         throw windows_error("string conversion failed");
       }
       result.resize(outLength);
-      outLength = MultiByteToWideChar(cp, 0, source, static_cast<int>(sourceLength), &result[0], outLength);
+      outLength = MultiByteToWideChar(cp, 0, source, static_cast<int>(sourceLength),
+                                      &result[0], outLength);
       if (outLength == 0) {
         throw windows_error("string conversion failed");
       }
@@ -160,10 +161,10 @@ template <>
 class string_cast_impl<std::wstring, const wchar_t*>
 {
 public:
-  static std::wstring cast(const wchar_t * const &source, CodePage, size_t)
+  static std::wstring cast(const wchar_t* const& source, CodePage, size_t)
   {
     return std::wstring(source);
   }
 };
 
-} // namespace
+}  // namespace usvfs::shared

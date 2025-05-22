@@ -1,7 +1,7 @@
 #pragma once
 
-#include "usvfsparameters.h"
 #include "dllimport.h"
+#include "usvfsparameters.h"
 #include <shared_memory.h>
 
 namespace usvfs
@@ -10,9 +10,8 @@ namespace usvfs
 class ForcedLibrary
 {
 public:
-  ForcedLibrary(
-    const std::string& processName, const std::string& libraryPath,
-    const shared::VoidAllocatorT &allocator);
+  ForcedLibrary(const std::string& processName, const std::string& libraryPath,
+                const shared::VoidAllocatorT& allocator);
 
   std::string processName() const;
   std::string libraryPath() const;
@@ -22,16 +21,15 @@ private:
   shared::StringT m_libraryPath;
 };
 
-
 class DLLEXPORT SharedParameters
 {
 public:
-  SharedParameters() = delete;
-  SharedParameters(const SharedParameters &reference) = delete;
-  SharedParameters &operator=(const SharedParameters &reference) = delete;
+  SharedParameters()                                             = delete;
+  SharedParameters(const SharedParameters& reference)            = delete;
+  SharedParameters& operator=(const SharedParameters& reference) = delete;
 
   SharedParameters(const usvfsParameters& reference,
-    const shared::VoidAllocatorT &allocator);
+                   const shared::VoidAllocatorT& allocator);
 
   usvfsParameters makeLocal() const;
 
@@ -40,9 +38,9 @@ public:
   std::string currentInverseSHMName() const;
   void setSHMNames(const std::string& current, const std::string& inverse);
 
-  void setDebugParameters(
-    LogLevel level, CrashDumpsType dumpType, const std::string& dumpPath,
-    std::chrono::milliseconds delayProcess);
+  void setDebugParameters(LogLevel level, CrashDumpsType dumpType,
+                          const std::string& dumpPath,
+                          std::chrono::milliseconds delayProcess);
 
   std::size_t userConnected();
   std::size_t userDisconnected();
@@ -70,30 +68,29 @@ public:
   void clearForcedLibraries();
 
 private:
-  using StringAllocatorT =
-    shared::VoidAllocatorT::rebind<shared::StringT>::other;
+  using StringAllocatorT = shared::VoidAllocatorT::rebind<shared::StringT>::other;
 
   using DWORDAllocatorT = shared::VoidAllocatorT::rebind<DWORD>::other;
 
-  using ForcedLibraryAllocatorT =
-    shared::VoidAllocatorT::rebind<ForcedLibrary>::other;
+  using ForcedLibraryAllocatorT = shared::VoidAllocatorT::rebind<ForcedLibrary>::other;
 
+  using ProcessBlacklist =
+      boost::container::flat_set<shared::StringT, std::less<shared::StringT>,
+                                 StringAllocatorT>;
 
-  using ProcessBlacklist = boost::container::flat_set<
-    shared::StringT, std::less<shared::StringT>, StringAllocatorT>;
+  using ProcessList =
+      boost::container::flat_set<DWORD, std::less<DWORD>, DWORDAllocatorT>;
 
-  using ProcessList = boost::container::flat_set<
-    DWORD, std::less<DWORD>, DWORDAllocatorT>;
+  using FileSuffixSkipList =
+      boost::container::flat_set<shared::StringT, std::less<shared::StringT>,
+                                 StringAllocatorT>;
 
-  using FileSuffixSkipList = boost::container::flat_set<
-      shared::StringT, std::less<shared::StringT>, StringAllocatorT>;
+  using DirectorySkipList =
+      boost::container::flat_set<shared::StringT, std::less<shared::StringT>,
+                                 StringAllocatorT>;
 
-  using DirectorySkipList = boost::container::flat_set<
-      shared::StringT, std::less<shared::StringT>, StringAllocatorT>;
-
-  using ForcedLibraries = boost::container::slist<
-    ForcedLibrary, ForcedLibraryAllocatorT>;
-
+  using ForcedLibraries =
+      boost::container::slist<ForcedLibrary, ForcedLibraryAllocatorT>;
 
   mutable bi::interprocess_mutex m_mutex;
   shared::StringT m_instanceName;
@@ -112,4 +109,4 @@ private:
   ForcedLibraries m_forcedLibraries;
 };
 
-} // namespace
+}  // namespace usvfs

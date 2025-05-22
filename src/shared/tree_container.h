@@ -1,7 +1,7 @@
 #pragma once
 
-#include "shared_memory.h"
 #include "directory_tree.h"
+#include "shared_memory.h"
 
 namespace usvfs::shared
 {
@@ -57,14 +57,17 @@ class TreeContainer
 {
 public:
   /**
-  * @brief Constructor
-  * @param SHMName name of the shared memory holding the tree. This should contain the running number
-  * @param size initial size in bytes of the container. since the tree is resized by doubling this should be
-  *        a power of two. 64k is supposed to be the page size on windows so smaller allocations make little sense
-  * @note size can't be too small. If initial allocations fail automatic growing won't work
-  */
+   * @brief Constructor
+   * @param SHMName name of the shared memory holding the tree. This should contain the
+   * running number
+   * @param size initial size in bytes of the container. since the tree is resized by
+   * doubling this should be a power of two. 64k is supposed to be the page size on
+   * windows so smaller allocations make little sense
+   * @note size can't be too small. If initial allocations fail automatic growing won't
+   * work
+   */
   TreeContainer(const std::string& SHMName, size_t size = 64 * 1024)
-    : m_TreeMeta(nullptr), m_SHMName(SHMName)
+      : m_TreeMeta(nullptr), m_SHMName(SHMName)
   {
     std::locale global_loc = std::locale();
     std::locale loc(global_loc, new fs::detail::utf8_codecvt_facet);
@@ -84,14 +87,12 @@ public:
     // to an already existing one
     createOrOpen(m_SHMName, size);
 
-    spdlog::get("usvfs")->info(
-      "attached to {0} with {1} nodes, size {2}",
-      m_SHMName,
-      m_TreeMeta->tree->numNodesRecursive(),
-      byte_string(m_SHM->get_size()));
+    spdlog::get("usvfs")->info("attached to {0} with {1} nodes, size {2}", m_SHMName,
+                               m_TreeMeta->tree->numNodesRecursive(),
+                               byte_string(m_SHM->get_size()));
   }
 
-  TreeContainer(const TreeContainer&) = delete;
+  TreeContainer(const TreeContainer&)            = delete;
   TreeContainer& operator=(const TreeContainer&) = delete;
 
   ~TreeContainer()
@@ -102,12 +103,9 @@ public:
   }
 
   /**
-  * @return retrieve an allocator that can be used to create objects in this tree
-  */
-  VoidAllocatorT allocator()
-  {
-    return VoidAllocatorT(m_SHM->get_segment_manager());
-  }
+   * @return retrieve an allocator that can be used to create objects in this tree
+   */
+  VoidAllocatorT allocator() { return VoidAllocatorT(m_SHM->get_segment_manager()); }
 
   template <typename... Arguments>
   typename TreeT::DataT create(Arguments&&... args)
@@ -115,15 +113,12 @@ public:
     return TreeT::DataT(std::forward<Arguments>(args)..., allocator());
   }
 
-  TreeT *operator->()
-  {
-    return get();
-  }
+  TreeT* operator->() { return get(); }
 
   /**
-  * @return raw pointer to the managed tree
-  */
-  TreeT *get()
+   * @return raw pointer to the managed tree
+   */
+  TreeT* get()
   {
     if (m_TreeMeta->outdated) {
       reassign();
@@ -133,9 +128,9 @@ public:
   }
 
   /**
-  * @return raw const pointer to the managed tree
-  */
-  const TreeT *get() const
+   * @return raw const pointer to the managed tree
+   */
+  const TreeT* get() const
   {
     if (m_TreeMeta->outdated) {
       // safe const_cast, TreeContainer are never created const
@@ -145,49 +140,35 @@ public:
     return m_TreeMeta->tree.get();
   }
 
-  const TreeT *operator->() const
-  {
-    return get();
-  }
+  const TreeT* operator->() const { return get(); }
 
   /**
-  * @return current name of the managed shared memory
-  */
-  std::string shmName() const
-  {
-    return m_SHMName;
-  }
+   * @return current name of the managed shared memory
+   */
+  std::string shmName() const { return m_SHMName; }
 
-  void clear()
-  {
-    m_TreeMeta->tree->clear();
-  }
+  void clear() { m_TreeMeta->tree->clear(); }
 
   /**
-  * @brief add a new file to the tree
-  *
-  * @param name name of the file, expected to be relative to this directory
-  * @param data the file data to attach
-  * @param flags flags for this files
-  * @param overwrite if true, the new leaf will overwrite an existing one that compares as "equal"
-  * @return pointer to the new node or a null ptr
-  **/
+   * @brief add a new file to the tree
+   *
+   * @param name name of the file, expected to be relative to this directory
+   * @param data the file data to attach
+   * @param flags flags for this files
+   * @param overwrite if true, the new leaf will overwrite an existing one that compares
+   *as "equal"
+   * @return pointer to the new node or a null ptr
+   **/
   template <typename T>
-  typename TreeT::NodePtrT addFile(
-    const fs::path &name, const T &data,
-    TreeFlags flags = 0, bool overwrite = true)
+  typename TreeT::NodePtrT addFile(const fs::path& name, const T& data,
+                                   TreeFlags flags = 0, bool overwrite = true)
   {
     for (;;) {
       DecomposablePath dp(name.string());
 
-      try
-      {
-        return addNode(
-          m_TreeMeta->tree.get(), dp,
-          data, overwrite, flags, allocator());
-      }
-      catch (const bi::bad_alloc&)
-      {
+      try {
+        return addNode(m_TreeMeta->tree.get(), dp, data, overwrite, flags, allocator());
+      } catch (const bi::bad_alloc&) {
       }
 
       reassign();
@@ -195,52 +176,47 @@ public:
   }
 
   /**
-  * @brief add a new directory to the tree
-  *
-  * @param name name of the file, expected to be relative to this directory
-  * @param data the file data to attach
-  * @param flags flags for this files
-  * @param overwrite if true, the new leaf will overwrite an existing one that compares as "equal"
-  * @return pointer to the new node or a null ptr
-  **/
+   * @brief add a new directory to the tree
+   *
+   * @param name name of the file, expected to be relative to this directory
+   * @param data the file data to attach
+   * @param flags flags for this files
+   * @param overwrite if true, the new leaf will overwrite an existing one that compares
+   *as "equal"
+   * @return pointer to the new node or a null ptr
+   **/
   template <typename T>
-  typename TreeT::NodePtrT addDirectory(
-    const fs::path &name, const T &data,
-    TreeFlags flags = 0, bool overwrite = true)
+  typename TreeT::NodePtrT addDirectory(const fs::path& name, const T& data,
+                                        TreeFlags flags = 0, bool overwrite = true)
   {
     for (;;) {
       DecomposablePath dp(name.string());
 
-      try
-      {
-        return addNode(
-          m_TreeMeta->tree.get(), dp, data,
-          overwrite, flags | FLAG_DIRECTORY, allocator());
-      }
-      catch (const bi::bad_alloc &)
-      {
+      try {
+        return addNode(m_TreeMeta->tree.get(), dp, data, overwrite,
+                       flags | FLAG_DIRECTORY, allocator());
+      } catch (const bi::bad_alloc&) {
       }
 
       reassign();
     }
   }
 
-  void getBuffer(void *&buffer, size_t &bufferSize) const
+  void getBuffer(void*& buffer, size_t& bufferSize) const
   {
-    buffer = m_SHM->get_address();
+    buffer     = m_SHM->get_address();
     bufferSize = m_SHM->get_size();
   }
 
 private:
   struct TreeMeta
   {
-    TreeMeta(const typename TreeT::DataT &data, SegmentManagerT *segmentManager) :
-      tree(segmentManager->construct<TreeT>(bi::anonymous_instance)(
-        "", true, TreeT::NodePtrT(), data, VoidAllocatorT(segmentManager))),
-      referenceCount(0), // reference count only set on top level node
-      outdated(false)
-    {
-    }
+    TreeMeta(const typename TreeT::DataT& data, SegmentManagerT* segmentManager)
+        : tree(segmentManager->construct<TreeT>(bi::anonymous_instance)(
+              "", true, TreeT::NodePtrT(), data, VoidAllocatorT(segmentManager))),
+          referenceCount(0),  // reference count only set on top level node
+          outdated(false)
+    {}
 
     OffsetPtrT<TreeT> tree;
     long referenceCount;
@@ -250,8 +226,7 @@ private:
 
   std::string m_SHMName;
   std::shared_ptr<SharedMemoryT> m_SHM;
-  TreeMeta *m_TreeMeta;
-
+  TreeMeta* m_TreeMeta;
 
   typename TreeT::DataT createEmpty()
   {
@@ -259,42 +234,40 @@ private:
   }
 
   template <typename T>
-  TreeT *createSubNode(
-    const VoidAllocatorT &allocator, std::string_view name,
-    unsigned long flags, const T &data)
+  TreeT* createSubNode(const VoidAllocatorT& allocator, std::string_view name,
+                       unsigned long flags, const T& data)
   {
     auto* manager = allocator.get_segment_manager();
 
     return manager->construct<TreeT>(bi::anonymous_instance)(
-      name, flags, TreeT::NodePtrT(),
-      createData<typename TreeT::DataT, T>(data, allocator), manager);
+        name, flags, TreeT::NodePtrT(),
+        createData<typename TreeT::DataT, T>(data, allocator), manager);
   }
 
-  typename TreeT::NodePtrT createSubPtr(TreeT *subNode)
+  typename TreeT::NodePtrT createSubPtr(TreeT* subNode)
   {
-    SharedMemoryT::segment_manager *manager = m_SHM->get_segment_manager();
+    SharedMemoryT::segment_manager* manager = m_SHM->get_segment_manager();
     return TreeT::NodePtrT(subNode, allocator(), TreeT::DeleterT(manager));
   }
 
   template <typename T>
-  typename TreeT::NodePtrT addNode(
-    TreeT *base, DecomposablePath& path,
-    const T &data, bool overwrite, unsigned int flags,
-    const VoidAllocatorT &allocator)
+  typename TreeT::NodePtrT addNode(TreeT* base, DecomposablePath& path, const T& data,
+                                   bool overwrite, unsigned int flags,
+                                   const VoidAllocatorT& allocator)
   {
     if (!path.peekNext()) {
       typename TreeT::NodePtrT newNode = base->node(path.current());
 
       if (!newNode) {
         // last name component, should be the filename
-        TreeT *node = createSubNode(allocator, path.current(), flags, data);
-        newNode = createSubPtr(node);
-        newNode->m_Self = TreeT::WeakPtrT(newNode);
+        TreeT* node       = createSubNode(allocator, path.current(), flags, data);
+        newNode           = createSubPtr(node);
+        newNode->m_Self   = TreeT::WeakPtrT(newNode);
         newNode->m_Parent = base->m_Self;
         base->set(StringT(path.current(), allocator), newNode);
         return newNode;
       } else if (overwrite) {
-        newNode->m_Data = createData<typename TreeT::DataT, T>(data, allocator);
+        newNode->m_Data  = createData<typename TreeT::DataT, T>(data, allocator);
         newNode->m_Flags = static_cast<usvfs::shared::TreeFlags>(flags);
         return newNode;
       } else {
@@ -307,58 +280,58 @@ private:
 
       if (subNode == base->m_Nodes.end()) {
         typename TreeT::NodePtrT newNode = createSubPtr(createSubNode(
-          allocator, path.current(),
-          FLAG_DIRECTORY | FLAG_DUMMY, createEmpty()));
+            allocator, path.current(), FLAG_DIRECTORY | FLAG_DUMMY, createEmpty()));
 
-        subNode = base->m_Nodes.emplace(StringT(path.current(), allocator), newNode).first;
-        subNode->second->m_Self = TreeT::WeakPtrT(subNode->second);
+        subNode =
+            base->m_Nodes.emplace(StringT(path.current(), allocator), newNode).first;
+        subNode->second->m_Self   = TreeT::WeakPtrT(subNode->second);
         subNode->second->m_Parent = base->m_Self;
       }
 
       path.next();
 
-      return addNode(
-        subNode->second.get().get(), path,
-        data, overwrite, flags, allocator);
+      return addNode(subNode->second.get().get(), path, data, overwrite, flags,
+                     allocator);
     }
   }
 
   /**
-  * @brief copy content of one tree to a different tree (in a different shared memory segment
-  * @param destination
-  * @param reference
-  * @note at the time this is called, destination needs to refer to the shm of "destination" so that
-  *       objects can be allocated in the new tree
-  */
-  void copyTree(TreeT *destination, const TreeT *reference)
+   * @brief copy content of one tree to a different tree (in a different shared memory
+   * segment
+   * @param destination
+   * @param reference
+   * @note at the time this is called, destination needs to refer to the shm of
+   * "destination" so that objects can be allocated in the new tree
+   */
+  void copyTree(TreeT* destination, const TreeT* reference)
   {
     VoidAllocatorT allocator = VoidAllocatorT(m_SHM->get_segment_manager());
-    destination->m_Flags = reference->m_Flags;
+    destination->m_Flags     = reference->m_Flags;
     dataAssign(destination->m_Data, reference->m_Data);
     destination->m_Name.assign(reference->m_Name.c_str());
 
-    for (const auto &kv : reference->m_Nodes) {
-      TreeT *newNode = createSubNode(allocator, "", true, createEmpty());
+    for (const auto& kv : reference->m_Nodes) {
+      TreeT* newNode = createSubNode(allocator, "", true, createEmpty());
       typename TreeT::NodePtrT newNodePtr = createSubPtr(newNode);
 
       // need to set self BEFORE recursively copying the subtree, otherwise
       // how would we assign parent pointers?
       newNode->m_Self = newNodePtr;
 
-      TreeT *source = reinterpret_cast<TreeT*>(kv.second.get().get());
+      TreeT* source = reinterpret_cast<TreeT*>(kv.second.get().get());
       copyTree(newNode, source);
       destination->set(newNode->m_Name, newNodePtr);
       newNode->m_Parent = destination->m_Self;
     }
   }
 
-  int increaseRefCount(TreeMeta *treeMeta)
+  int increaseRefCount(TreeMeta* treeMeta)
   {
     bi::scoped_lock<bi::interprocess_mutex> lock(treeMeta->mutex);
     return ++treeMeta->referenceCount;
   }
 
-  int decreaseRefCount(TreeMeta *treeMeta)
+  int decreaseRefCount(TreeMeta* treeMeta)
   {
     bi::scoped_lock<bi::interprocess_mutex> lock(treeMeta->mutex);
     return --treeMeta->referenceCount;
@@ -371,21 +344,20 @@ private:
     SharedMemoryT* newSHM = openSHM(SHMName);
 
     if (newSHM) {
-      spdlog::get("usvfs")->info(
-        "{} opened in process {}", SHMName, ::GetCurrentProcessId());
+      spdlog::get("usvfs")->info("{} opened in process {}", SHMName,
+                                 ::GetCurrentProcessId());
     } else {
       newSHM = createSHM(SHMName, size);
 
       if (newSHM) {
-        spdlog::get("usvfs")->info(
-          "{} created in process {}", SHMName, ::GetCurrentProcessId());
+        spdlog::get("usvfs")->info("{} created in process {}", SHMName,
+                                   ::GetCurrentProcessId());
       }
     }
 
     if (!newSHM) {
-      spdlog::get("usvfs")->error(
-        "failed to create or open {} in process {}",
-        SHMName, ::GetCurrentProcessId());
+      spdlog::get("usvfs")->error("failed to create or open {} in process {}", SHMName,
+                                  ::GetCurrentProcessId());
 
       throw std::exception("no shm instance");
     }
@@ -397,13 +369,10 @@ private:
   //
   SharedMemoryT* createSHM(const std::string& SHMName, size_t size)
   {
-    try
-    {
-      return new SharedMemoryT(
-        bi::create_only, SHMName.c_str(), static_cast<unsigned int>(size));
-    }
-    catch (const bi::interprocess_exception&)
-    {
+    try {
+      return new SharedMemoryT(bi::create_only, SHMName.c_str(),
+                               static_cast<unsigned int>(size));
+    } catch (const bi::interprocess_exception&) {
     }
 
     return nullptr;
@@ -413,12 +382,9 @@ private:
   //
   SharedMemoryT* openSHM(const std::string& SHMName)
   {
-    try
-    {
+    try {
       return new SharedMemoryT(bi::open_only, SHMName.c_str());
-    }
-    catch (const bi::interprocess_exception&)
-    {
+    } catch (const bi::interprocess_exception&) {
     }
 
     return nullptr;
@@ -430,8 +396,7 @@ private:
   //
   // see reassign()
   //
-  std::optional<std::string> activateSHM(
-    SharedMemoryT *shm, const std::string& SHMName)
+  std::optional<std::string> activateSHM(SharedMemoryT* shm, const std::string& SHMName)
   {
     std::shared_ptr<SharedMemoryT> oldSHM = m_SHM;
 
@@ -439,7 +404,8 @@ private:
     std::pair<TreeMeta*, SharedMemoryT::size_type> res = m_SHM->find<TreeMeta>("Meta");
 
     if (res.first == nullptr) {
-      res.first = m_SHM->construct<TreeMeta>("Meta")(createEmpty(), m_SHM->get_segment_manager());
+      res.first = m_SHM->construct<TreeMeta>("Meta")(createEmpty(),
+                                                     m_SHM->get_segment_manager());
       if (res.first == nullptr) {
         USVFS_THROW_EXCEPTION(bi::bad_alloc());
       }
@@ -460,7 +426,7 @@ private:
     }
 
     m_TreeMeta = res.first;
-    m_SHMName = SHMName;
+    m_SHMName  = SHMName;
 
     return deadSHMName;
   }
@@ -479,7 +445,7 @@ private:
     return match[1].str() + std::to_string(count + 1);
   }
 
-  bool unassign(const std::shared_ptr<SharedMemoryT> &shm, TreeMeta *tree)
+  bool unassign(const std::shared_ptr<SharedMemoryT>& shm, TreeMeta* tree)
   {
     if (tree == nullptr) {
       return true;
@@ -522,8 +488,8 @@ private:
       // another process has ran out of memory and started allocating blocks
       // with higher numbers
 
-      spdlog::get("usvfs")->info(
-        "tree {0} is outdated, looking for another one", m_SHMName);
+      spdlog::get("usvfs")->info("tree {0} is outdated, looking for another one",
+                                 m_SHMName);
 
       if (findNewerBlock(deadSHMNames)) {
         // the new block was found and activated
@@ -533,7 +499,7 @@ private:
       // this block isn't outdated, so reassign() was called because a bad_alloc
       // exception was thrown
       spdlog::get("usvfs")->info(
-        "ran out of memory in tree {0}, will create another one", m_SHMName);
+          "ran out of memory in tree {0}, will create another one", m_SHMName);
     }
 
     // either the block is full or it's outdated, but no higher block was found;
@@ -569,7 +535,7 @@ private:
 
     std::string nextName = m_SHMName;
 
-    for (int i=0; i<Tries; ++i) {
+    for (int i = 0; i < Tries; ++i) {
       // the shm name is something like "mod_organizer_3", which becomes
       // "mod_organizer_4"
       nextName = followupName(nextName);
@@ -604,9 +570,8 @@ private:
         spdlog::get("usvfs")->info("{0} is also outdated", nextName);
       } else {
         // shm opened correctly, activated and not outdated, done
-        spdlog::get("usvfs")->info(
-          "{0} not outdated, taking it, size now {1}",
-          nextName, byte_string(m_SHM->get_size()));
+        spdlog::get("usvfs")->info("{0} not outdated, taking it, size now {1}",
+                                   nextName, byte_string(m_SHM->get_size()));
 
         return true;
       }
@@ -617,7 +582,7 @@ private:
     // still run
 
     spdlog::get("usvfs")->error(
-      "found no existing tree above {0}, will create a new one", m_SHMName);
+        "found no existing tree above {0}, will create a new one", m_SHMName);
 
     return false;
   }
@@ -657,9 +622,9 @@ private:
       deadSHMNames.push_back(*deadSHMName);
     }
 
-    spdlog::get("usvfs")->info(
-      "tree {0} size now {1}", m_SHMName, byte_string(m_SHM->get_size()));
+    spdlog::get("usvfs")->info("tree {0} size now {1}", m_SHMName,
+                               byte_string(m_SHM->get_size()));
   }
 };
 
-} // namespace
+}  // namespace usvfs::shared

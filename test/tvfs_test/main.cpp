@@ -404,12 +404,13 @@ TEST_F(USVFSTest, NtQueryObjectVirtualFile)
     char buffer[1024];
     IO_STATUS_BLOCK status;
     const auto res = usvfs::hook_NtQueryInformationFile(
-      hdl, &status, buffer, sizeof(buffer), FileNameInformation);
+        hdl, &status, buffer, sizeof(buffer), FileNameInformation);
     ASSERT_EQ(STATUS_SUCCESS, status.Status);
 
     FILE_NAME_INFORMATION* fileNameInfo =
         reinterpret_cast<FILE_NAME_INFORMATION*>(buffer);
-    ASSERT_EQ(L"\\np.exe", std::wstring(fileNameInfo->FileName, fileNameInfo->FileNameLength / 2));
+    ASSERT_EQ(L"\\np.exe",
+              std::wstring(fileNameInfo->FileName, fileNameInfo->FileNameLength / 2));
   }
 
   {
@@ -423,33 +424,35 @@ TEST_F(USVFSTest, NtQueryObjectVirtualFile)
 
     FILE_NAME_INFORMATION* fileNameInfo =
         reinterpret_cast<FILE_NAME_INFORMATION*>(buffer);
-    ASSERT_EQ(L"\\np.exe", std::wstring(fileNameInfo->FileName, fileNameInfo->FileNameLength / 2));
+    ASSERT_EQ(L"\\np.exe",
+              std::wstring(fileNameInfo->FileName, fileNameInfo->FileNameLength / 2));
   }
 
   // buffer of size should be too small for the original path (\Windows\notepad.exe)
   // but not for \np.exe
   {
-    // the required size should be sizeof(ULONG) + 7 * 2 but apparently that is 
+    // the required size should be sizeof(ULONG) + 7 * 2 but apparently that is
     // not enough for the CI so using 16 * 2 which should be large enough for
     // the hooked version, but still too short for the non-hooked one
     char buffer[sizeof(ULONG) + 7 * 2];
     IO_STATUS_BLOCK status;
     NTSTATUS res;
 
-    res = ::NtQueryInformationFile(
-      hdl, &status, buffer, sizeof(buffer), FileNameInformation);
+    res = ::NtQueryInformationFile(hdl, &status, buffer, sizeof(buffer),
+                                   FileNameInformation);
     ASSERT_EQ(STATUS_BUFFER_OVERFLOW, res);
     ASSERT_EQ(STATUS_BUFFER_OVERFLOW, status.Status);
 
-    res = usvfs::hook_NtQueryInformationFile(
-      hdl, &status, buffer, sizeof(buffer), FileNameInformation);
+    res = usvfs::hook_NtQueryInformationFile(hdl, &status, buffer, sizeof(buffer),
+                                             FileNameInformation);
     ASSERT_EQ(STATUS_SUCCESS, res);
     ASSERT_EQ(STATUS_SUCCESS, status.Status);
     ASSERT_EQ(sizeof(ULONG) + 7 * 2, status.Information);
 
     FILE_NAME_INFORMATION* fileNameInfo =
         reinterpret_cast<FILE_NAME_INFORMATION*>(buffer);
-    ASSERT_EQ(L"\\np.exe", std::wstring(fileNameInfo->FileName, fileNameInfo->FileNameLength / 2));
+    ASSERT_EQ(L"\\np.exe",
+              std::wstring(fileNameInfo->FileName, fileNameInfo->FileNameLength / 2));
   }
 
   {
@@ -473,12 +476,15 @@ TEST_F(USVFSTest, NtQueryObjectVirtualFile)
     ULONG requiredLength;
     NTSTATUS res;
     char buffer[2048];
-      
-    res  = usvfs::hook_NtQueryObject(hdl, ObjectNameInformation, buffer, sizeof(OBJECT_NAME_INFORMATION) - 1, &requiredLength);
+
+    res =
+        usvfs::hook_NtQueryObject(hdl, ObjectNameInformation, buffer,
+                                  sizeof(OBJECT_NAME_INFORMATION) - 1, &requiredLength);
     ASSERT_EQ(STATUS_INFO_LENGTH_MISMATCH, res);
     ASSERT_EQ(expectedLength, requiredLength);
 
-    res = usvfs::hook_NtQueryObject(hdl, ObjectNameInformation, buffer, sizeof(OBJECT_NAME_INFORMATION), &requiredLength);
+    res = usvfs::hook_NtQueryObject(hdl, ObjectNameInformation, buffer,
+                                    sizeof(OBJECT_NAME_INFORMATION), &requiredLength);
     ASSERT_EQ(STATUS_BUFFER_OVERFLOW, res);
     ASSERT_EQ(expectedLength, requiredLength);
   }

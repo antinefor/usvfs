@@ -19,13 +19,13 @@ You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "wildcard.h"
-#include "windows_sane.h"
 #include "logging.h"
+#include "windows_sane.h"
 
 static bool IsInnerMatch(LPCWSTR pszString, LPCWSTR pszMatch)
 {
   while (*pszMatch != L'\0') {
-    if ((*pszMatch==L'?') || (*pszMatch==L'>')) {
+    if ((*pszMatch == L'?') || (*pszMatch == L'>')) {
       if (!*pszString) {
         // ? must match exactly one character
         return false;
@@ -33,7 +33,7 @@ static bool IsInnerMatch(LPCWSTR pszString, LPCWSTR pszMatch)
 
       ++pszString;
       ++pszMatch;
-    } else if ((*pszMatch==L'*') || (*pszMatch==L'<')) {
+    } else if ((*pszMatch == L'*') || (*pszMatch == L'<')) {
       if (IsInnerMatch(pszString, pszMatch + 1)) {
         // * may match empty string or we may have matched something already
         return true;
@@ -43,8 +43,8 @@ static bool IsInnerMatch(LPCWSTR pszString, LPCWSTR pszMatch)
 
       // the rest of the string can't be matched
     } else {
-      if (CharUpperW(MAKEINTRESOURCEW(MAKELONG(*pszString++, 0)))
-          !=CharUpperW(MAKEINTRESOURCEW(MAKELONG(*pszMatch++, 0)))) {
+      if (CharUpperW(MAKEINTRESOURCEW(MAKELONG(*pszString++, 0))) !=
+          CharUpperW(MAKEINTRESOURCEW(MAKELONG(*pszMatch++, 0)))) {
         // regular chars compare
         return false;
       }
@@ -89,11 +89,11 @@ static LPCSTR InnerMatch(LPCSTR pszString, LPCSTR pszMatch)
       //      Because we eat one character from the match string, the
       //      recursion will stop.
       {
-          LPCSTR remainder = InnerMatch(pszString, pszMatch + 1);
-          if (remainder != nullptr) {
-              // we have a match and the * replaces no other character
-              return remainder;
-          }
+        LPCSTR remainder = InnerMatch(pszString, pszMatch + 1);
+        if (remainder != nullptr) {
+          // we have a match and the * replaces no other character
+          return remainder;
+        }
       }
 
       // 2. Chance we eat the next character and try it again, with a
@@ -112,8 +112,8 @@ static LPCSTR InnerMatch(LPCSTR pszString, LPCSTR pszMatch)
       // Standard compare of 2 chars. Note that *pszSring might be 0
       // here, but then we never get a match on *pszMask that has always
       // a value while inside this loop.
-      if (   CharUpperA(MAKEINTRESOURCEA(MAKELONG(*pszString++, 0)))
-          != CharUpperA(MAKEINTRESOURCEA(MAKELONG(*pszMatch++, 0))))
+      if (CharUpperA(MAKEINTRESOURCEA(MAKELONG(*pszString++, 0))) !=
+          CharUpperA(MAKEINTRESOURCEA(MAKELONG(*pszMatch++, 0))))
         return nullptr;
     }
   }
@@ -128,7 +128,6 @@ static LPCSTR InnerMatch(LPCSTR pszString, LPCSTR pszMatch)
     return nullptr;
   }
 }
-
 
 namespace usvfs::shared::wildcard
 {
@@ -148,7 +147,6 @@ bool Match(LPCWSTR pszString, LPCWSTR pszMatch)
     return IsInnerMatch(pszString, pszMatch);
   }
 }
-
 
 bool Match(LPCSTR pszString, LPCSTR pszMatch)
 {
@@ -177,14 +175,14 @@ LPCSTR PartialMatch(LPCSTR pszString, LPCSTR pszMatch)
   } else {
     size_t len = strlen(pszMatch);
     if ((len > 2) && (strcmp(pszMatch + len - 2, ".*") == 0)) {
-      // in cmd.exe there seems to be no difference between <something>* and <something>*.*
+      // in cmd.exe there seems to be no difference between <something>* and
+      // <something>*.*
       std::string temp(pszMatch, pszMatch + len - 2);
       LPCSTR pos = InnerMatch(pszString, temp.c_str());
       if (pos != nullptr) {
         if (*pos == '\0') {
           return pszMatch + strlen(pszMatch);
-        }
-        else {
+        } else {
           return pszMatch + (pos - temp.c_str());
         }
       }
@@ -193,4 +191,4 @@ LPCSTR PartialMatch(LPCSTR pszString, LPCSTR pszMatch)
   }
 }
 
-} // namespace
+}  // namespace usvfs::shared::wildcard

@@ -21,10 +21,10 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "dllimport.h"
+#include "formatters.h"
+#include "ntdll_declarations.h"
 #include "shmlogger.h"
 #include "stringutils.h"
-#include "ntdll_declarations.h"
-#include "formatters.h"
 
 namespace usvfs::log
 {
@@ -34,24 +34,22 @@ enum class DisplayStyle : uint8_t
   Hex = 0x01
 };
 
-
 class CallLoggerDummy
 {
 public:
   template <typename T>
-  CallLoggerDummy &addParam(const char*, const T&, uint8_t style = 0)
+  CallLoggerDummy& addParam(const char*, const T&, uint8_t style = 0)
   {
     return *this;
   }
 };
 
-
 class CallLogger
 {
 public:
-  explicit CallLogger(const char *function)
+  explicit CallLogger(const char* function)
   {
-    const char *namespaceend = strrchr(function, ':');
+    const char* namespaceend = strrchr(function, ':');
 
     if (namespaceend != nullptr) {
       function = namespaceend + 1;
@@ -62,27 +60,23 @@ public:
 
   ~CallLogger()
   {
-    try
-    {
+    try {
       static std::shared_ptr<spdlog::logger> log = spdlog::get("hooks");
       log->debug("{}", m_Message);
-    }
-    catch (...)
-    {
+    } catch (...) {
       // suppress all exceptions in destructor
     }
   }
 
   template <typename T>
-  CallLogger &addParam(const char *name, const T &value, uint8_t style = 0);
+  CallLogger& addParam(const char* name, const T& value, uint8_t style = 0);
 
 private:
   std::string m_Message;
 };
 
-
 template <typename T>
-CallLogger &CallLogger::addParam(const char *name, const T &value, uint8_t style)
+CallLogger& CallLogger::addParam(const char* name, const T& value, uint8_t style)
 {
   static bool enabled = spdlog::get("hooks")->should_log(spdlog::level::debug);
   typedef std::underlying_type<DisplayStyle>::type DSType;
@@ -91,20 +85,16 @@ CallLogger &CallLogger::addParam(const char *name, const T &value, uint8_t style
     if constexpr (std::is_pointer_v<T>) {
       if (value == nullptr) {
         std::format_to(std::back_inserter(m_Message), "[{}=<null>]", name);
-      }
-      else {
+      } else {
         std::format_to(std::back_inserter(m_Message), "[{}={}]", name, value);
       }
-    }
-    else if constexpr (std::is_integral_v<T>) {
+    } else if constexpr (std::is_integral_v<T>) {
       if (style & static_cast<DSType>(DisplayStyle::Hex)) {
         std::format_to(std::back_inserter(m_Message), "[{}={:x}]", name, value);
-      }
-      else {
+      } else {
         std::format_to(std::back_inserter(m_Message), "[{}={}]", name, value);
       }
-    }
-    else {
+    } else {
       std::format_to(std::back_inserter(m_Message), "[{}={}]", name, value);
     }
   }
@@ -115,7 +105,7 @@ CallLogger &CallLogger::addParam(const char *name, const T &value, uint8_t style
 spdlog::level::level_enum ConvertLogLevel(LogLevel level);
 LogLevel ConvertLogLevel(spdlog::level::level_enum level);
 
-} // namespace
+}  // namespace usvfs::log
 
 // prefer the short variant of the function name, without signature.
 // Fall back to the portable boost macro
@@ -128,5 +118,6 @@ LogLevel ConvertLogLevel(spdlog::level::level_enum level);
 #define LOG_CALL() usvfs::log::CallLogger(__MYFUNC__)
 
 #define PARAM(val) addParam(#val, val)
-#define PARAMHEX(val) addParam(#val, val, static_cast<uint8_t>(usvfs::log::DisplayStyle::Hex))
+#define PARAMHEX(val)                                                                  \
+  addParam(#val, val, static_cast<uint8_t>(usvfs::log::DisplayStyle::Hex))
 #define PARAMWRAP(val) addParam(#val, usvfs::log::wrap(val))

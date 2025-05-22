@@ -24,21 +24,20 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 namespace usvfs::shared
 {
 
-fs::path::iterator nextIter(
-  const fs::path::iterator &iter, const fs::path::iterator &end)
+fs::path::iterator nextIter(const fs::path::iterator& iter,
+                            const fs::path::iterator& end)
 {
   fs::path::iterator next = iter;
   advanceIter(next, end);
   return next;
 }
 
-void advanceIter(
-  fs::path::iterator &iter, const fs::path::iterator &end)
+void advanceIter(fs::path::iterator& iter, const fs::path::iterator& end)
 {
   ++iter;
-  while (iter != end &&
-         (iter->wstring() == L"/" || iter->wstring() == L"\\" || iter->wstring() == L"."))
+  while (iter != end && (iter->wstring() == L"/" || iter->wstring() == L"\\" ||
+                         iter->wstring() == L"."))
     ++iter;
 }
 
-}  // namespace
+}  // namespace usvfs::shared

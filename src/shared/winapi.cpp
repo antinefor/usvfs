@@ -19,12 +19,12 @@ You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "winapi.h"
-#include "stringutils.h"
-#include "stringcast.h"
+#include "exceptionex.h"
 #include "logging.h"
 #include "ntdll_declarations.h"
+#include "stringcast.h"
+#include "stringutils.h"
 #include "unicodestring.h"
-#include "exceptionex.h"
 
 namespace winapi::ansi
 {
@@ -53,7 +53,7 @@ std::pair<std::string, std::string> getFullPathName(LPCSTR fileName)
   static const int INIT_SIZE = 128;
   std::string result;
   result.resize(INIT_SIZE);
-  LPSTR filePart = nullptr;
+  LPSTR filePart     = nullptr;
   DWORD requiredSize = GetFullPathNameA(fileName, INIT_SIZE, &result[0], &filePart);
   if (requiredSize >= INIT_SIZE) {
     result.resize(requiredSize);
@@ -61,14 +61,12 @@ std::pair<std::string, std::string> getFullPathName(LPCSTR fileName)
   }
   if (requiredSize != 0UL) {
     return std::make_pair(result, std::string(filePart != nullptr ? filePart : ""));
-  }
-  else {
+  } else {
     return make_pair(result, std::string());
   }
 }
 
-} // namespace
-
+}  // namespace winapi::ansi
 
 namespace winapi::wide
 {
@@ -80,9 +78,11 @@ std::wstring getModuleFileName(HMODULE module, HANDLE process)
   DWORD rc = 0UL;
 
   while ((rc = (process == INVALID_HANDLE_VALUE)
-                  ? ::GetModuleFileNameW(module, &result[0], static_cast<DWORD>(result.size()))
-                  : ::GetModuleFileNameExW(process, module, &result[0], static_cast<DWORD>(result.size()))
-         ) == result.size()) {
+                   ? ::GetModuleFileNameW(module, &result[0],
+                                          static_cast<DWORD>(result.size()))
+                   : ::GetModuleFileNameExW(process, module, &result[0],
+                                            static_cast<DWORD>(result.size()))) ==
+         result.size()) {
     result.resize(result.size() * 2);
   }
 
@@ -107,23 +107,24 @@ std::pair<std::wstring, std::wstring> getFullPathName(LPCWSTR fileName)
 {
   wchar_t buf1[MAX_PATH];
   std::vector<wchar_t> buf2;
-  wchar_t* result = buf1;
-  LPWSTR filePart = nullptr;
+  wchar_t* result    = buf1;
+  LPWSTR filePart    = nullptr;
   DWORD requiredSize = GetFullPathNameW(fileName, MAX_PATH, result, &filePart);
   if (requiredSize >= MAX_PATH) {
     buf2.resize(requiredSize);
-    result = &buf2[0];
+    result       = &buf2[0];
     requiredSize = GetFullPathNameW(fileName, requiredSize, result, &filePart);
   }
   return make_pair(std::wstring(result, requiredSize),
-    std::wstring((requiredSize && filePart) ? filePart : L""));
+                   std::wstring((requiredSize && filePart) ? filePart : L""));
 }
 
 std::wstring getCurrentDirectory()
 {
   // really great api this (::GetCurrentDirectoryW)
   //  - if it succeeds, returns size in characters WITHOUT zero termination
-  //  - if it fails due to buffer too small, returns size in characters WITH zero termination
+  //  - if it fails due to buffer too small, returns size in characters WITH zero
+  //  termination
   //  - if it fails for other reasons, returns 0
   std::wstring result;
   DWORD required = GetCurrentDirectoryW(0, nullptr);
@@ -142,15 +143,14 @@ std::wstring getKnownFolderPath(REFKNOWNFOLDERID folderID)
 
   ::SHGetKnownFolderPath(folderID, 0, nullptr, &writablePath);
 
-  ON_BLOCK_EXIT([writablePath] () {
+  ON_BLOCK_EXIT([writablePath]() {
     ::CoTaskMemFree(writablePath);
   });
 
   return std::wstring(writablePath);
 }
 
-} // namespace
-
+}  // namespace winapi::wide
 
 namespace winapi::ex
 {
@@ -158,26 +158,29 @@ namespace winapi::ex
 std::pair<uintptr_t, uintptr_t> getSectionRange(HANDLE moduleHandle)
 {
   std::pair<uintptr_t, uintptr_t> result;
-  bool found = false;
+  bool found          = false;
   uintptr_t exeModule = reinterpret_cast<uintptr_t>(moduleHandle);
   if (exeModule == 0) {
     throw std::runtime_error("failed to determine address range of executable");
   }
 
-  std::pair<uintptr_t, uintptr_t> totalRange{ UINT_MAX, 0 };
+  std::pair<uintptr_t, uintptr_t> totalRange{UINT_MAX, 0};
 
   PIMAGE_DOS_HEADER dosHeader = reinterpret_cast<PIMAGE_DOS_HEADER>(exeModule);
-  PIMAGE_NT_HEADERS ntHeader = reinterpret_cast<PIMAGE_NT_HEADERS>(exeModule + dosHeader->e_lfanew);
-  PIMAGE_SECTION_HEADER sectionHeader = reinterpret_cast<PIMAGE_SECTION_HEADER>(ntHeader + 1);
-  for (int i = 0 ; i < ntHeader->FileHeader.NumberOfSections && !found; ++i) {
+  PIMAGE_NT_HEADERS ntHeader =
+      reinterpret_cast<PIMAGE_NT_HEADERS>(exeModule + dosHeader->e_lfanew);
+  PIMAGE_SECTION_HEADER sectionHeader =
+      reinterpret_cast<PIMAGE_SECTION_HEADER>(ntHeader + 1);
+  for (int i = 0; i < ntHeader->FileHeader.NumberOfSections && !found; ++i) {
     if (memcmp(sectionHeader->Name, ".text", 5) == 0) {
-      result.first = exeModule + sectionHeader->VirtualAddress;
+      result.first  = exeModule + sectionHeader->VirtualAddress;
       result.second = result.first + sectionHeader->Misc.VirtualSize;
-      found = true;
+      found         = true;
     } else {
-      uintptr_t start = exeModule + sectionHeader->VirtualAddress;
-      totalRange.first = std::min(totalRange.first, start);
-      totalRange.second = std::max<uintptr_t>(totalRange.second, start + sectionHeader->Misc.VirtualSize);
+      uintptr_t start   = exeModule + sectionHeader->VirtualAddress;
+      totalRange.first  = std::min(totalRange.first, start);
+      totalRange.second = std::max<uintptr_t>(totalRange.second,
+                                              start + sectionHeader->Misc.VirtualSize);
     }
     ++sectionHeader;
   }
@@ -197,17 +200,16 @@ OSVersion getOSVersion()
   RtlGetVersion((PRTL_OSVERSIONINFOW)&versionInfo);
 
   OSVersion result;
-  result.major = versionInfo.dwMajorVersion;
-  result.minor = versionInfo.dwMinorVersion;
-  result.build = versionInfo.dwBuildNumber;
+  result.major      = versionInfo.dwMajorVersion;
+  result.minor      = versionInfo.dwMinorVersion;
+  result.build      = versionInfo.dwBuildNumber;
   result.platformid = versionInfo.dwPlatformId;
-  result.servicpack = versionInfo.wServicePackMajor << 16
-                    | versionInfo.wServicePackMinor;
+  result.servicpack =
+      versionInfo.wServicePackMajor << 16 | versionInfo.wServicePackMinor;
   return result;
 }
 
-} // namespace
-
+}  // namespace winapi::ex
 
 namespace winapi::ex::ansi
 {
@@ -220,44 +222,41 @@ std::string errorString(DWORD errorCode)
 
   DWORD currentErrorCode = GetLastError();
 
-  errorCode = errorCode != std::numeric_limits<DWORD>::max() ? errorCode
-                                                             : currentErrorCode;
+  errorCode =
+      errorCode != std::numeric_limits<DWORD>::max() ? errorCode : currentErrorCode;
 
   // TODO: the message is not english?
-  if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
-                       , nullptr
-                       , errorCode
-                       , 0 //, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT)
-                       , (LPSTR)&buffer
-                       , 0
-                       , nullptr) == 0) {
+  if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+                     nullptr, errorCode,
+                     0  //, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT)
+                     ,
+                     (LPSTR)&buffer, 0, nullptr) == 0) {
     finalMessage << "(unknown error [" << errorCode << "])";
   } else {
     if (buffer != nullptr) {
       size_t end = strlen(buffer) - 1;
-      while ((buffer[end] == '\n')
-             || (buffer[end] == '\r')) {
+      while ((buffer[end] == '\n') || (buffer[end] == '\r')) {
         buffer[end--] = '\0';
       }
       finalMessage << "(" << buffer << " [" << errorCode << "])";
-      LocalFree(buffer); // allocated by FormatMessage
+      LocalFree(buffer);  // allocated by FormatMessage
     }
   }
 
-  SetLastError(currentErrorCode); // restore error code because FormatMessage might have modified it
+  SetLastError(currentErrorCode);  // restore error code because FormatMessage might
+                                   // have modified it
   return finalMessage.str();
 }
 
-std::string toString(const FILETIME &time)
+std::string toString(const FILETIME& time)
 {
   SYSTEMTIME temp;
   FileTimeToSystemTime(&time, &temp);
   std::ostringstream stream;
-  stream << temp.wYear << "-" << temp.wMonth  << "-" << temp.wDay
-         << temp.wHour << ":" << temp.wMinute << ":" << temp.wSecond;
+  stream << temp.wYear << "-" << temp.wMonth << "-" << temp.wDay << temp.wHour << ":"
+         << temp.wMinute << ":" << temp.wSecond;
   return stream.str();
 }
-
 
 LPCSTR GetBaseName(LPCSTR string)
 {
@@ -273,13 +272,12 @@ LPCSTR GetBaseName(LPCSTR string)
   return result;
 }
 
-} // namespace
-
+}  // namespace winapi::ex::ansi
 
 namespace winapi::ex::wide
 {
 
-bool fileExists(LPCWSTR fileName, bool *isDirectory)
+bool fileExists(LPCWSTR fileName, bool* isDirectory)
 {
   DWORD attrib = GetFileAttributesW(fileName);
 
@@ -301,41 +299,39 @@ std::wstring errorString(DWORD errorCode)
 
   DWORD currentErrorCode = GetLastError();
 
-  errorCode = errorCode != std::numeric_limits<DWORD>::max() ? errorCode
-                                                             : currentErrorCode;
+  errorCode =
+      errorCode != std::numeric_limits<DWORD>::max() ? errorCode : currentErrorCode;
 
   // TODO: the message is not english?
-  if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
-                       , nullptr
-                       , errorCode
-                       , 0 //, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT)
-                       , (LPWSTR)&buffer
-                       , 0
-                       , nullptr) == 0) {
+  if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+                     nullptr, errorCode,
+                     0  //, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT)
+                     ,
+                     (LPWSTR)&buffer, 0, nullptr) == 0) {
     finalMessage << L"(unknown error [" << errorCode << "])";
   } else {
     if (buffer != nullptr) {
       size_t end = wcslen(buffer) - 1;
-      while ((buffer[end] == L'\n')
-             || (buffer[end] == L'\r')) {
+      while ((buffer[end] == L'\n') || (buffer[end] == L'\r')) {
         buffer[end--] = L'\0';
       }
       finalMessage << L"(" << buffer << L" [" << errorCode << L"])";
-      LocalFree(buffer); // allocated by FormatMessage
+      LocalFree(buffer);  // allocated by FormatMessage
     }
   }
 
-  SetLastError(currentErrorCode); // restore error code because FormatMessage might have modified it
+  SetLastError(currentErrorCode);  // restore error code because FormatMessage might
+                                   // have modified it
   return finalMessage.str();
 }
 
-std::wstring toString(const FILETIME &time)
+std::wstring toString(const FILETIME& time)
 {
   SYSTEMTIME temp;
   FileTimeToSystemTime(&time, &temp);
   std::wostringstream stream;
-  stream << temp.wYear << "-" << temp.wMonth  << "-" << temp.wDay
-         << temp.wHour << ":" << temp.wMinute << ":" << temp.wSecond;
+  stream << temp.wYear << "-" << temp.wMonth << "-" << temp.wDay << temp.wHour << ":"
+         << temp.wMinute << ":" << temp.wSecond;
   return stream.str();
 }
 
@@ -394,48 +390,40 @@ std::vector<FileResult> quickFindFiles(LPCWSTR directoryName, LPCWSTR pattern)
 
   static const unsigned int BUFFER_SIZE = 1024;
 
-  HANDLE hdl = CreateFileW(directoryName
-                           , GENERIC_READ
-                           , FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE
-                           , nullptr
-                           , OPEN_EXISTING
-                           , FILE_FLAG_BACKUP_SEMANTICS
-                           , nullptr);
+  HANDLE hdl = CreateFileW(directoryName, GENERIC_READ,
+                           FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                           nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
 
-  ON_BLOCK_EXIT([hdl] () {
+  ON_BLOCK_EXIT([hdl]() {
     CloseHandle(hdl);
   });
 
   uint8_t buffer[BUFFER_SIZE];
 
-  NTSTATUS res = STATUS_SUCCESS; // status success
+  NTSTATUS res = STATUS_SUCCESS;  // status success
   while (res == STATUS_SUCCESS) {
     IO_STATUS_BLOCK status;
 
-    res = NtQueryDirectoryFile(hdl
-                               , nullptr
-                               , nullptr
-                               , nullptr
-                               , &status
-                               , buffer
-                               , BUFFER_SIZE
-                               , FileFullDirectoryInformation
-                               , FALSE
-                               , static_cast<PUNICODE_STRING>(usvfs::UnicodeString(pattern))
-                               , FALSE);
+    res = NtQueryDirectoryFile(
+        hdl, nullptr, nullptr, nullptr, &status, buffer, BUFFER_SIZE,
+        FileFullDirectoryInformation, FALSE,
+        static_cast<PUNICODE_STRING>(usvfs::UnicodeString(pattern)), FALSE);
     if (res == STATUS_SUCCESS) {
-      FILE_FULL_DIR_INFORMATION *info = reinterpret_cast<FILE_FULL_DIR_INFORMATION*>(buffer);
-      void *endPos = buffer + status.Information;
+      FILE_FULL_DIR_INFORMATION* info =
+          reinterpret_cast<FILE_FULL_DIR_INFORMATION*>(buffer);
+      void* endPos = buffer + status.Information;
       while (info < endPos) {
         FileResult file;
-        file.fileName = std::wstring(info->FileName, info->FileNameLength / sizeof(wchar_t));
+        file.fileName =
+            std::wstring(info->FileName, info->FileNameLength / sizeof(wchar_t));
         file.attributes = info->FileAttributes;
 
         result.push_back(file);
         if (info->NextEntryOffset == 0) {
           break;
         } else {
-          info = reinterpret_cast<FILE_FULL_DIR_INFORMATION*>(reinterpret_cast<uint8_t*>(info) + info->NextEntryOffset);
+          info = reinterpret_cast<FILE_FULL_DIR_INFORMATION*>(
+              reinterpret_cast<uint8_t*>(info) + info->NextEntryOffset);
         }
       }
     }
@@ -448,26 +436,33 @@ bool createPath(boost::filesystem::path path, LPSECURITY_ATTRIBUTES securityAttr
 {
   // sanity and guaranteed recursion end:
   if (!path.has_relative_path())
-    throw usvfs::shared::windows_error("createPath() refusing to create non-existing top level path: " + path.string());
+    throw usvfs::shared::windows_error(
+        "createPath() refusing to create non-existing top level path: " +
+        path.string());
 
   DWORD attr = GetFileAttributesW(path.c_str());
-  DWORD err = GetLastError();
+  DWORD err  = GetLastError();
   if (attr != INVALID_FILE_ATTRIBUTES) {
     if (attr & FILE_ATTRIBUTE_DIRECTORY)
-      return false; // if directory already exists all is good
+      return false;  // if directory already exists all is good
     else
-      throw usvfs::shared::windows_error("createPath() called on a file: " + path.string());
+      throw usvfs::shared::windows_error("createPath() called on a file: " +
+                                         path.string());
   }
   if (err != ERROR_FILE_NOT_FOUND && err != ERROR_PATH_NOT_FOUND)
-    throw usvfs::shared::windows_error("createPath() GetFileAttributesW failed on: " + path.string(), err);
+    throw usvfs::shared::windows_error(
+        "createPath() GetFileAttributesW failed on: " + path.string(), err);
 
-  if (err != ERROR_FILE_NOT_FOUND) // ERROR_FILE_NOT_FOUND means parent directory already exists
-    createPath(path.parent_path(), securityAttributes); // otherwise create parent directory (recursively)
+  if (err != ERROR_FILE_NOT_FOUND)  // ERROR_FILE_NOT_FOUND means parent directory
+                                    // already exists
+    createPath(path.parent_path(),
+               securityAttributes);  // otherwise create parent directory (recursively)
 
   BOOL res = CreateDirectoryW(path.c_str(), securityAttributes);
   if (!res) {
     err = GetLastError();
-    throw usvfs::shared::windows_error("createPath() CreateDirectoryW failed on: " + path.string(), err);
+    throw usvfs::shared::windows_error(
+        "createPath() CreateDirectoryW failed on: " + path.string(), err);
   }
   return true;
 }
@@ -475,12 +470,15 @@ bool createPath(boost::filesystem::path path, LPSECURITY_ATTRIBUTES securityAttr
 std::wstring getWindowsBuildLab(bool ex)
 {
   HKEY hKey = nullptr;
-  auto res = RegOpenKeyExW(HKEY_LOCAL_MACHINE, LR"(SOFTWARE\Microsoft\Windows NT\CurrentVersion)", 0, KEY_READ, &hKey);
+  auto res  = RegOpenKeyExW(HKEY_LOCAL_MACHINE,
+                            LR"(SOFTWARE\Microsoft\Windows NT\CurrentVersion)", 0,
+                            KEY_READ, &hKey);
   if (res != ERROR_SUCCESS || !hKey)
     return L"Opening HKLM Windows NT\\CurrentVersion failed?!";
   WCHAR buf[200];
   DWORD size = static_cast<DWORD>(sizeof(buf));
-  res = RegQueryValueExW(hKey, ex ? L"BuildLabEx" : L"BuildLab", NULL, NULL, reinterpret_cast<LPBYTE>(buf), &size);
+  res        = RegQueryValueExW(hKey, ex ? L"BuildLabEx" : L"BuildLab", NULL, NULL,
+                                reinterpret_cast<LPBYTE>(buf), &size);
   if (res != ERROR_SUCCESS || size > sizeof(buf))
     return ex ? L"BuildLabEx reg value not found?!" : L"BuildLab reg value not found?!";
   size /= sizeof(buf[0]);
@@ -489,4 +487,4 @@ std::wstring getWindowsBuildLab(bool ex)
   return std::wstring(buf, size);
 }
 
-} // namespace
+}  // namespace winapi::ex::wide

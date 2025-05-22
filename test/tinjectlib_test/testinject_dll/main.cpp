@@ -10,7 +10,6 @@ void __cdecl InitNoParam(LPVOID, size_t)
   ExitProcess(10001);
 }
 
-
 void __cdecl InitComplexParam(LPVOID userData, size_t)
 {
   LPCWSTR string = (LPCWSTR)userData;
@@ -21,20 +20,17 @@ void __cdecl InitComplexParam(LPVOID userData, size_t)
   }
 }
 
-
-BOOL APIENTRY DllMain(HMODULE,
-                      DWORD  reasonForCall,
-                      LPVOID)
+BOOL APIENTRY DllMain(HMODULE, DWORD reasonForCall, LPVOID)
 {
   switch (reasonForCall) {
-    case DLL_PROCESS_ATTACH: {
-    } break;
-    case DLL_PROCESS_DETACH: {
-    } break;
-    case DLL_THREAD_ATTACH: {
-    } break;
-    case DLL_THREAD_DETACH: {
-    } break;
+  case DLL_PROCESS_ATTACH: {
+  } break;
+  case DLL_PROCESS_DETACH: {
+  } break;
+  case DLL_THREAD_ATTACH: {
+  } break;
+  case DLL_THREAD_DETACH: {
+  } break;
   }
   return TRUE;
 }

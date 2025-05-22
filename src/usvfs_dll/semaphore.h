@@ -6,7 +6,6 @@
 // undefined behaviour over deadlock. It's utterly broken
 // and needs to be replaced in time.
 
-
 class RecursiveBenaphore
 {
 
@@ -21,10 +20,8 @@ public:
   void signal();
 
 private:
-
   LONG m_Counter;
   DWORD m_OwnerId;
   int m_Recursion;
   HANDLE m_Semaphore;
-
 };

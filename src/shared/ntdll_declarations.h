@@ -27,8 +27,10 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 
 typedef LONG NTSTATUS;
 
-typedef struct _IO_STATUS_BLOCK {
-  union {
+typedef struct _IO_STATUS_BLOCK
+{
+  union
+  {
     NTSTATUS Status;
     PVOID Pointer;
   } DUMMYUNIONNAME;
@@ -36,7 +38,8 @@ typedef struct _IO_STATUS_BLOCK {
   ULONG_PTR Information;
 } IO_STATUS_BLOCK, *PIO_STATUS_BLOCK;
 
-typedef struct _FILE_DIRECTORY_INFORMATION {
+typedef struct _FILE_DIRECTORY_INFORMATION
+{
   ULONG NextEntryOffset;
   ULONG FileIndex;
   LARGE_INTEGER CreationTime;
@@ -50,7 +53,8 @@ typedef struct _FILE_DIRECTORY_INFORMATION {
   WCHAR FileName[1];
 } FILE_DIRECTORY_INFORMATION, *PFILE_DIRECTORY_INFORMATION;
 
-typedef struct _FILE_FULL_DIR_INFORMATION {
+typedef struct _FILE_FULL_DIR_INFORMATION
+{
   ULONG NextEntryOffset;
   ULONG FileIndex;
   LARGE_INTEGER CreationTime;
@@ -65,7 +69,8 @@ typedef struct _FILE_FULL_DIR_INFORMATION {
   WCHAR FileName[1];
 } FILE_FULL_DIR_INFORMATION, *PFILE_FULL_DIR_INFORMATION;
 
-typedef struct _FILE_ID_FULL_DIR_INFORMATION {
+typedef struct _FILE_ID_FULL_DIR_INFORMATION
+{
   ULONG NextEntryOffset;
   ULONG FileIndex;
   LARGE_INTEGER CreationTime;
@@ -81,7 +86,8 @@ typedef struct _FILE_ID_FULL_DIR_INFORMATION {
   WCHAR FileName[1];
 } FILE_ID_FULL_DIR_INFORMATION, *PFILE_ID_FULL_DIR_INFORMATION;
 
-typedef struct _FILE_BOTH_DIR_INFORMATION {
+typedef struct _FILE_BOTH_DIR_INFORMATION
+{
   ULONG NextEntryOffset;
   ULONG FileIndex;
   LARGE_INTEGER CreationTime;
@@ -98,7 +104,8 @@ typedef struct _FILE_BOTH_DIR_INFORMATION {
   WCHAR FileName[1];
 } FILE_BOTH_DIR_INFORMATION, *PFILE_BOTH_DIR_INFORMATION;
 
-typedef struct _FILE_ID_BOTH_DIR_INFORMATION {
+typedef struct _FILE_ID_BOTH_DIR_INFORMATION
+{
   ULONG NextEntryOffset;
   ULONG FileIndex;
   LARGE_INTEGER CreationTime;
@@ -134,7 +141,8 @@ typedef struct _FILE_STANDARD_INFORMATION
   BOOLEAN Directory;
 } FILE_STANDARD_INFORMATION, *PFILE_STANDARD_INFORMATION;
 
-typedef struct _FILE_NAMES_INFORMATION {
+typedef struct _FILE_NAMES_INFORMATION
+{
   ULONG NextEntryOffset;
   ULONG FileIndex;
   ULONG FileNameLength;
@@ -190,11 +198,14 @@ typedef struct _FILE_ALL_INFORMATION
   FILE_NAME_INFORMATION NameInformation;
 } FILE_ALL_INFORMATION, *PFILE_ALL_INFORMATION;
 
-typedef struct _FILE_OBJECTID_INFORMATION {
+typedef struct _FILE_OBJECTID_INFORMATION
+{
   LONGLONG FileReference;
   UCHAR ObjectId[16];
-  union {
-    struct {
+  union
+  {
+    struct
+    {
       UCHAR BirthVolumeId[16];
       UCHAR BirthObjectId[16];
       UCHAR DomainId[16];
@@ -203,26 +214,28 @@ typedef struct _FILE_OBJECTID_INFORMATION {
   };
 } FILE_OBJECTID_INFORMATION, *PFILE_OBJECTID_INFORMATION;
 
-typedef struct _FILE_REPARSE_POINT_INFORMATION {
+typedef struct _FILE_REPARSE_POINT_INFORMATION
+{
   LONGLONG FileReference;
   ULONG Tag;
 } FILE_REPARSE_POINT_INFORMATION, *PFILE_REPARSE_POINT_INFORMATION;
 
 // copied from ntstatus.h
-#define STATUS_SUCCESS               ((NTSTATUS)0x00000000L)
-#define STATUS_BUFFER_OVERFLOW       ((NTSTATUS)0x80000005L)
-#define STATUS_NO_MORE_FILES         ((NTSTATUS)0x80000006L)
-#define STATUS_INFO_LENGTH_MISMATCH  ((NTSTATUS)0xC0000004L)
-#define STATUS_NO_SUCH_FILE          ((NTSTATUS)0xC000000FL)
+#define STATUS_SUCCESS ((NTSTATUS)0x00000000L)
+#define STATUS_BUFFER_OVERFLOW ((NTSTATUS)0x80000005L)
+#define STATUS_NO_MORE_FILES ((NTSTATUS)0x80000006L)
+#define STATUS_INFO_LENGTH_MISMATCH ((NTSTATUS)0xC0000004L)
+#define STATUS_NO_SUCH_FILE ((NTSTATUS)0xC000000FL)
 
-#define SL_RESTART_SCAN                 0x01
-#define SL_RETURN_SINGLE_ENTRY          0x02
-#define SL_INDEX_SPECIFIED              0x04
-#define SL_RETURN_ON_DISK_ENTRIES_ONLY  0x08
+#define SL_RESTART_SCAN 0x01
+#define SL_RETURN_SINGLE_ENTRY 0x02
+#define SL_INDEX_SPECIFIED 0x04
+#define SL_RETURN_ON_DISK_ENTRIES_ONLY 0x08
 
-#define SL_QUERY_DIRECTORY_MASK         0x0b
+#define SL_QUERY_DIRECTORY_MASK 0x0b
 
-typedef enum _FILE_INFORMATION_CLASS {
+typedef enum _FILE_INFORMATION_CLASS
+{
   FileDirectoryInformation       = 1,
   FileFullDirectoryInformation   = 2,
   FileBothDirectoryInformation   = 3,
@@ -236,28 +249,35 @@ typedef enum _FILE_INFORMATION_CLASS {
   FileIdBothDirectoryInformation = 37,
   FileIdFullDirectoryInformation = 38,
   FileNormalizedNameInformation  = 48,
-} FILE_INFORMATION_CLASS, *PFILE_INFORMATION_CLASS;
+} FILE_INFORMATION_CLASS,
+    *PFILE_INFORMATION_CLASS;
 
-typedef enum _MODE { KernelMode, UserMode, MaximumMode } MODE;
+typedef enum _MODE
+{
+  KernelMode,
+  UserMode,
+  MaximumMode
+} MODE;
 
 typedef struct _IO_STATUS_BLOCK IO_STATUS_BLOCK;
 
-typedef struct _IO_STATUS_BLOCK *PIO_STATUS_BLOCK;
+typedef struct _IO_STATUS_BLOCK* PIO_STATUS_BLOCK;
 // typedef VOID (NTAPI *PIO_APC_ROUTINE )(__in PVOID ApcContext, __in
 // PIO_STATUS_BLOCK IoStatusBlock, __in ULONG Reserved);
-typedef VOID(NTAPI *PIO_APC_ROUTINE)(PVOID ApcContext,
-                                     PIO_STATUS_BLOCK IoStatusBlock,
+typedef VOID(NTAPI* PIO_APC_ROUTINE)(PVOID ApcContext, PIO_STATUS_BLOCK IoStatusBlock,
                                      ULONG Reserved);
 typedef enum _FILE_INFORMATION_CLASS FILE_INFORMATION_CLASS;
 
-typedef struct _UNICODE_STRING {
+typedef struct _UNICODE_STRING
+{
   USHORT Length;
   USHORT MaximumLength;
   PWSTR Buffer;
 } UNICODE_STRING, *PUNICODE_STRING;
-typedef const UNICODE_STRING *PCUNICODE_STRING;
+typedef const UNICODE_STRING* PCUNICODE_STRING;
 
-typedef struct _OBJECT_ATTRIBUTES {
+typedef struct _OBJECT_ATTRIBUTES
+{
   ULONG Length;
   HANDLE RootDirectory;
   PUNICODE_STRING ObjectName;
@@ -266,7 +286,8 @@ typedef struct _OBJECT_ATTRIBUTES {
   PVOID SecurityQualityOfService;
 } OBJECT_ATTRIBUTES, *POBJECT_ATTRIBUTES;
 
-typedef enum _POOL_TYPE {
+typedef enum _POOL_TYPE
+{
   NonPagedPool,
   NonPagedPoolExecute = NonPagedPool,
   PagedPool,
@@ -292,7 +313,8 @@ typedef enum _POOL_TYPE {
   NonPagedPoolSessionNx                = NonPagedPoolNx + 32
 } POOL_TYPE;
 
-typedef struct _OBJECT_TYPE_INITIALIZER {
+typedef struct _OBJECT_TYPE_INITIALIZER
+{
   WORD Length;
   UCHAR ObjectTypeFlags;
   ULONG CaseInsensitive : 1;
@@ -309,18 +331,19 @@ typedef struct _OBJECT_TYPE_INITIALIZER {
   ULONG DefaultPagedPoolCharge;
   ULONG DefaultNonPagedPoolCharge;
   PVOID DumpProcedure;
-  LONG *OpenProcedure;
+  LONG* OpenProcedure;
   PVOID CloseProcedure;
   PVOID DeleteProcedure;
-  LONG *ParseProcedure;
-  LONG *SecurityProcedure;
-  LONG *QueryNameProcedure;
-  UCHAR *OkayToCloseProcedure;
+  LONG* ParseProcedure;
+  LONG* SecurityProcedure;
+  LONG* QueryNameProcedure;
+  UCHAR* OkayToCloseProcedure;
 } OBJECT_TYPE_INITIALIZER, *POBJECT_TYPE_INITIALIZER;
 
 typedef CCHAR KPROCESSOR_MODE;
 
-typedef struct _OBJECT_HANDLE_INFORMATION {
+typedef struct _OBJECT_HANDLE_INFORMATION
+{
   ULONG HandleAttributes;
   ACCESS_MASK GrantedAccess;
 } OBJECT_HANDLE_INFORMATION, *POBJECT_HANDLE_INFORMATION;
@@ -337,13 +360,15 @@ typedef enum _OBJECT_INFORMATION_CLASS
   ObjectTypeInformation  = 2
 } OBJECT_INFORMATION_CLASS;
 
-typedef struct _RTL_RELATIVE_NAME {
+typedef struct _RTL_RELATIVE_NAME
+{
   UNICODE_STRING RelativeName;
-  HANDLE         ContainingDirectory;
-  void*          CurDirRef;
+  HANDLE ContainingDirectory;
+  void* CurDirRef;
 } RTL_RELATIVE_NAME, *PRTL_RELATIVE_NAME;
 
-typedef struct _FILE_NETWORK_OPEN_INFORMATION {
+typedef struct _FILE_NETWORK_OPEN_INFORMATION
+{
   LARGE_INTEGER CreationTime;
   LARGE_INTEGER LastAccessTime;
   LARGE_INTEGER LastWriteTime;
@@ -353,76 +378,77 @@ typedef struct _FILE_NETWORK_OPEN_INFORMATION {
   ULONG FileAttributes;
 } FILE_NETWORK_OPEN_INFORMATION, *PFILE_NETWORK_OPEN_INFORMATION;
 
-#define FILE_DIRECTORY_FILE                       0x00000001
-#define FILE_WRITE_THROUGH                        0x00000002
-#define FILE_SEQUENTIAL_ONLY                      0x00000004
-#define FILE_NO_INTERMEDIATE_BUFFERING            0x00000008
-#define FILE_SYNCHRONOUS_IO_ALERT                 0x00000010
-#define FILE_SYNCHRONOUS_IO_NONALERT              0x00000020
-#define FILE_NON_DIRECTORY_FILE                   0x00000040
-#define FILE_CREATE_TREE_CONNECTION               0x00000080
-#define FILE_COMPLETE_IF_OPLOCKED                 0x00000100
-#define FILE_NO_EA_KNOWLEDGE                      0x00000200
-#define FILE_OPEN_REMOTE_INSTANCE                 0x00000400
-#define FILE_RANDOM_ACCESS                        0x00000800
-#define FILE_DELETE_ON_CLOSE                      0x00001000
-#define FILE_OPEN_BY_FILE_ID                      0x00002000
-#define FILE_OPEN_FOR_BACKUP_INTENT               0x00004000
-#define FILE_NO_COMPRESSION                       0x00008000
-#define FILE_OPEN_REQUIRING_OPLOCK                0x00010000
-#define FILE_DISALLOW_EXCLUSIVE                   0x00020000
-#define FILE_SESSION_AWARE                        0x00040000
-#define FILE_RESERVE_OPFILTER                     0x00100000
-#define FILE_OPEN_REPARSE_POINT                   0x00200000
-#define FILE_OPEN_NO_RECALL                       0x00400000
-#define FILE_OPEN_FOR_FREE_SPACE_QUERY            0x00800000
+#define FILE_DIRECTORY_FILE 0x00000001
+#define FILE_WRITE_THROUGH 0x00000002
+#define FILE_SEQUENTIAL_ONLY 0x00000004
+#define FILE_NO_INTERMEDIATE_BUFFERING 0x00000008
+#define FILE_SYNCHRONOUS_IO_ALERT 0x00000010
+#define FILE_SYNCHRONOUS_IO_NONALERT 0x00000020
+#define FILE_NON_DIRECTORY_FILE 0x00000040
+#define FILE_CREATE_TREE_CONNECTION 0x00000080
+#define FILE_COMPLETE_IF_OPLOCKED 0x00000100
+#define FILE_NO_EA_KNOWLEDGE 0x00000200
+#define FILE_OPEN_REMOTE_INSTANCE 0x00000400
+#define FILE_RANDOM_ACCESS 0x00000800
+#define FILE_DELETE_ON_CLOSE 0x00001000
+#define FILE_OPEN_BY_FILE_ID 0x00002000
+#define FILE_OPEN_FOR_BACKUP_INTENT 0x00004000
+#define FILE_NO_COMPRESSION 0x00008000
+#define FILE_OPEN_REQUIRING_OPLOCK 0x00010000
+#define FILE_DISALLOW_EXCLUSIVE 0x00020000
+#define FILE_SESSION_AWARE 0x00040000
+#define FILE_RESERVE_OPFILTER 0x00100000
+#define FILE_OPEN_REPARSE_POINT 0x00200000
+#define FILE_OPEN_NO_RECALL 0x00400000
+#define FILE_OPEN_FOR_FREE_SPACE_QUERY 0x00800000
 #define FILE_CONTAINS_EXTENDED_CREATE_INFORMATION 0x10000000
 
 // Nt
 
-using NtQueryDirectoryFile_type = NTSTATUS(WINAPI *)(
-    HANDLE, HANDLE, PIO_APC_ROUTINE, PVOID, PIO_STATUS_BLOCK, PVOID, ULONG,
-    FILE_INFORMATION_CLASS, BOOLEAN, PUNICODE_STRING, BOOLEAN);
-using NtQueryDirectoryFileEx_type = NTSTATUS(WINAPI *)(
-    HANDLE, HANDLE, PIO_APC_ROUTINE, PVOID, PIO_STATUS_BLOCK, PVOID, ULONG,
-    FILE_INFORMATION_CLASS, ULONG, PUNICODE_STRING);
+using NtQueryDirectoryFile_type   = NTSTATUS(WINAPI*)(HANDLE, HANDLE, PIO_APC_ROUTINE,
+                                                    PVOID, PIO_STATUS_BLOCK, PVOID,
+                                                    ULONG, FILE_INFORMATION_CLASS,
+                                                    BOOLEAN, PUNICODE_STRING, BOOLEAN);
+using NtQueryDirectoryFileEx_type = NTSTATUS(WINAPI*)(HANDLE, HANDLE, PIO_APC_ROUTINE,
+                                                      PVOID, PIO_STATUS_BLOCK, PVOID,
+                                                      ULONG, FILE_INFORMATION_CLASS,
+                                                      ULONG, PUNICODE_STRING);
 
-using NtQueryFullAttributesFile_type = NTSTATUS(WINAPI *)(
-    POBJECT_ATTRIBUTES, PFILE_NETWORK_OPEN_INFORMATION);
-using NtQueryAttributesFile_type = NTSTATUS(WINAPI *)(POBJECT_ATTRIBUTES,
+using NtQueryFullAttributesFile_type =
+    NTSTATUS(WINAPI*)(POBJECT_ATTRIBUTES, PFILE_NETWORK_OPEN_INFORMATION);
+using NtQueryAttributesFile_type = NTSTATUS(WINAPI*)(POBJECT_ATTRIBUTES,
                                                      PFILE_BASIC_INFORMATION);
 
-using NtQueryObject_type = NTSTATUS (WINAPI *)(
-  HANDLE Handle, OBJECT_INFORMATION_CLASS ObjectInformationClass,
-  PVOID ObjectInformation, ULONG ObjectInformationLength, PULONG ReturnLength);
+using NtQueryObject_type = NTSTATUS(WINAPI*)(
+    HANDLE Handle, OBJECT_INFORMATION_CLASS ObjectInformationClass,
+    PVOID ObjectInformation, ULONG ObjectInformationLength, PULONG ReturnLength);
 using NtQueryInformationFile_type = NTSTATUS(WINAPI*)(
     HANDLE FileHandle, PIO_STATUS_BLOCK IoStatusBlock, PVOID FileInformation,
     ULONG Length, FILE_INFORMATION_CLASS FileInformationClass);
 
 using NtQueryInformationByName_type = NTSTATUS(WINAPI*)(
-  HANDLE FileHandle, PIO_STATUS_BLOCK IoStatusBlock, PVOID FileInformation,
-  ULONG Length, FILE_INFORMATION_CLASS FileInformationClass);
+    HANDLE FileHandle, PIO_STATUS_BLOCK IoStatusBlock, PVOID FileInformation,
+    ULONG Length, FILE_INFORMATION_CLASS FileInformationClass);
 
-using NtOpenFile_type = NTSTATUS(WINAPI *)(PHANDLE, ACCESS_MASK,
-                                          POBJECT_ATTRIBUTES, PIO_STATUS_BLOCK,
-                                          ULONG, ULONG);
-using NtCreateFile_type = NTSTATUS(WINAPI *)(PHANDLE, ACCESS_MASK,
-                                            POBJECT_ATTRIBUTES,
-                                            PIO_STATUS_BLOCK, PLARGE_INTEGER,
-                                            ULONG, ULONG, ULONG, ULONG, PVOID,
-                                            ULONG);
+using NtOpenFile_type   = NTSTATUS(WINAPI*)(PHANDLE, ACCESS_MASK, POBJECT_ATTRIBUTES,
+                                          PIO_STATUS_BLOCK, ULONG, ULONG);
+using NtCreateFile_type = NTSTATUS(WINAPI*)(PHANDLE, ACCESS_MASK, POBJECT_ATTRIBUTES,
+                                            PIO_STATUS_BLOCK, PLARGE_INTEGER, ULONG,
+                                            ULONG, ULONG, ULONG, PVOID, ULONG);
 
-using NtClose_type = NTSTATUS(WINAPI *)(HANDLE);
+using NtClose_type = NTSTATUS(WINAPI*)(HANDLE);
 
-using NtTerminateProcess_type = NTSTATUS(WINAPI *)(HANDLE ProcessHandle, NTSTATUS ExitStatus);
+using NtTerminateProcess_type = NTSTATUS(WINAPI*)(HANDLE ProcessHandle,
+                                                  NTSTATUS ExitStatus);
 
 // Rtl
 
-using RtlDoesFileExists_U_type = NTSYSAPI BOOLEAN(NTAPI *)(PCWSTR);
-using RtlDosPathNameToRelativeNtPathName_U_WithStatus_type = NTSTATUS(NTAPI *)(
-  PCWSTR DosFileName, PUNICODE_STRING NtFileName, PWSTR* FilePath, PRTL_RELATIVE_NAME RelativeName);
-using RtlReleaseRelativeName_type = void (NTAPI *)(PRTL_RELATIVE_NAME RelativeName);
-using RtlGetVersion_type = NTSTATUS (NTAPI *)(PRTL_OSVERSIONINFOW);
+using RtlDoesFileExists_U_type = NTSYSAPI BOOLEAN(NTAPI*)(PCWSTR);
+using RtlDosPathNameToRelativeNtPathName_U_WithStatus_type =
+    NTSTATUS(NTAPI*)(PCWSTR DosFileName, PUNICODE_STRING NtFileName, PWSTR* FilePath,
+                     PRTL_RELATIVE_NAME RelativeName);
+using RtlReleaseRelativeName_type = void(NTAPI*)(PRTL_RELATIVE_NAME RelativeName);
+using RtlGetVersion_type          = NTSTATUS(NTAPI*)(PRTL_OSVERSIONINFOW);
 
 extern NtQueryDirectoryFile_type NtQueryDirectoryFile;
 extern NtQueryDirectoryFileEx_type NtQueryDirectoryFileEx;
@@ -436,11 +462,13 @@ extern NtCreateFile_type NtCreateFile;
 extern NtClose_type NtClose;
 extern NtTerminateProcess_type NtTerminateProcess;
 extern RtlDoesFileExists_U_type RtlDoesFileExists_U;
-extern RtlDosPathNameToRelativeNtPathName_U_WithStatus_type RtlDosPathNameToRelativeNtPathName_U_WithStatus;
+extern RtlDosPathNameToRelativeNtPathName_U_WithStatus_type
+    RtlDosPathNameToRelativeNtPathName_U_WithStatus;
 extern RtlReleaseRelativeName_type RtlReleaseRelativeName;
 extern RtlGetVersion_type RtlGetVersion;
 
-// ensures ntdll functions have been initialized (only needed during static objects initialization)
+// ensures ntdll functions have been initialized (only needed during static objects
+// initialization)
 void ntdll_declarations_init();
 
 #pragma warning(pop)

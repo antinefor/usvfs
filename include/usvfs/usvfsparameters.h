@@ -20,11 +20,12 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
 
-#include "logging.h"
 #include "dllimport.h"
+#include "logging.h"
 #include <chrono>
 
-enum class CrashDumpsType : uint8_t {
+enum class CrashDumpsType : uint8_t
+{
   None,
   Mini,
   Data,
@@ -34,34 +35,34 @@ enum class CrashDumpsType : uint8_t {
 extern "C"
 {
 
-// deprecated, use usvfsParameters and usvfsCreateParameters()
-//
-struct USVFSParameters {
-  char instanceName[65];
-  char currentSHMName[65];
-  char currentInverseSHMName[65];
-  bool debugMode{false};
-  LogLevel logLevel{LogLevel::Debug};
-  CrashDumpsType crashDumpsType{CrashDumpsType::None};
-  char crashDumpsPath[260];
-};
+  // deprecated, use usvfsParameters and usvfsCreateParameters()
+  //
+  struct USVFSParameters
+  {
+    char instanceName[65];
+    char currentSHMName[65];
+    char currentInverseSHMName[65];
+    bool debugMode{false};
+    LogLevel logLevel{LogLevel::Debug};
+    CrashDumpsType crashDumpsType{CrashDumpsType::None};
+    char crashDumpsPath[260];
+  };
 
+  struct usvfsParameters;
 
-struct usvfsParameters;
+  DLLEXPORT usvfsParameters* usvfsCreateParameters();
+  DLLEXPORT usvfsParameters* usvfsDupeParameters(usvfsParameters* p);
+  DLLEXPORT void usvfsCopyParameters(const usvfsParameters* source,
+                                     usvfsParameters* dest);
+  DLLEXPORT void usvfsFreeParameters(usvfsParameters* p);
 
-DLLEXPORT usvfsParameters* usvfsCreateParameters();
-DLLEXPORT usvfsParameters* usvfsDupeParameters(usvfsParameters* p);
-DLLEXPORT void usvfsCopyParameters(const usvfsParameters* source, usvfsParameters* dest);
-DLLEXPORT void usvfsFreeParameters(usvfsParameters* p);
+  DLLEXPORT void usvfsSetInstanceName(usvfsParameters* p, const char* name);
+  DLLEXPORT void usvfsSetDebugMode(usvfsParameters* p, BOOL debugMode);
+  DLLEXPORT void usvfsSetLogLevel(usvfsParameters* p, LogLevel level);
+  DLLEXPORT void usvfsSetCrashDumpType(usvfsParameters* p, CrashDumpsType type);
+  DLLEXPORT void usvfsSetCrashDumpPath(usvfsParameters* p, const char* path);
+  DLLEXPORT void usvfsSetProcessDelay(usvfsParameters* p, int milliseconds);
 
-DLLEXPORT void usvfsSetInstanceName(usvfsParameters* p, const char* name);
-DLLEXPORT void usvfsSetDebugMode(usvfsParameters* p, BOOL debugMode);
-DLLEXPORT void usvfsSetLogLevel(usvfsParameters* p, LogLevel level);
-DLLEXPORT void usvfsSetCrashDumpType(usvfsParameters* p, CrashDumpsType type);
-DLLEXPORT void usvfsSetCrashDumpPath(usvfsParameters* p, const char* path);
-DLLEXPORT void usvfsSetProcessDelay(usvfsParameters* p, int milliseconds);
-
-DLLEXPORT const char* usvfsLogLevelToString(LogLevel lv);
-DLLEXPORT const char* usvfsCrashDumpTypeToString(CrashDumpsType t);
-
+  DLLEXPORT const char* usvfsLogLevelToString(LogLevel lv);
+  DLLEXPORT const char* usvfsCrashDumpTypeToString(CrashDumpsType t);
 }

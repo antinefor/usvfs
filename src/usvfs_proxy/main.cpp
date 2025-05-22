@@ -20,33 +20,31 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "pch.h"
-#include <inject.h>
-#include <shared_memory.h>
-#include <usvfsparameters.h>
-#include <sharedparameters.h>
 #include <../usvfs_dll/hookcontext.h>
-#include <shmlogger.h>
-#include <spdlog/spdlog.h>
-#include <winapi.h>
-#include <boost/filesystem.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string/predicate.hpp>
 #include <Psapi.h>
 #include <WinUser.h>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
+#include <inject.h>
+#include <shared_memory.h>
+#include <sharedparameters.h>
+#include <shmlogger.h>
+#include <spdlog/spdlog.h>
+#include <usvfsparameters.h>
+#include <winapi.h>
 
-
-namespace bi = boost::interprocess;
+namespace bi  = boost::interprocess;
 namespace bfs = boost::filesystem;
-using usvfs::shared::SharedMemoryT;
 using usvfs::SharedParameters;
-
+using usvfs::shared::SharedMemoryT;
 
 template <typename T>
-T getParameter(std::vector<std::string> &arguments, const std::string &key, bool consume)
+T getParameter(std::vector<std::string>& arguments, const std::string& key,
+               bool consume)
 {
   auto iter = std::find(arguments.begin(), arguments.end(), std::string("--") + key);
-  if ((iter != arguments.end())
-      && ((iter + 1) != arguments.end())) {
+  if ((iter != arguments.end()) && ((iter + 1) != arguments.end())) {
     T result = boost::lexical_cast<T>(*(iter + 1));
     if (consume) {
       arguments.erase(iter, iter + 2);
@@ -58,11 +56,11 @@ T getParameter(std::vector<std::string> &arguments, const std::string &key, bool
 }
 
 template <typename T>
-T getParameter(std::vector<std::string> &arguments, const std::string &key, const T &def, bool consume)
+T getParameter(std::vector<std::string>& arguments, const std::string& key,
+               const T& def, bool consume)
 {
   auto iter = std::find(arguments.begin(), arguments.end(), std::string("--") + key);
-  if ((iter != arguments.end())
-      && ((iter + 1) != arguments.end())) {
+  if ((iter != arguments.end()) && ((iter + 1) != arguments.end())) {
     T result = boost::lexical_cast<T>(*(iter + 1));
     if (consume) {
       arguments.erase(iter, iter + 2);
@@ -73,7 +71,8 @@ T getParameter(std::vector<std::string> &arguments, const std::string &key, cons
   }
 }
 
-static void exceptionDialog(int line, int num, ...) {
+static void exceptionDialog(int line, int num, ...)
+{
   va_list args;
   va_start(args, num);
 
@@ -82,9 +81,9 @@ static void exceptionDialog(int line, int num, ...) {
   wstr.append(L"Unhandled USVFS proxy exception (line ");
   wsprintf(buf, L"%d): ", line);
   wstr.append(buf);
-  for (int i = 0; i < num; i++ ) {
-    wsprintf(buf, L"%S", va_arg(args, const char *));
-    if (i < num-1)
+  for (int i = 0; i < num; i++) {
+    wsprintf(buf, L"%S", va_arg(args, const char*));
+    if (i < num - 1)
       wsprintf(buf, L", ");
     wstr.append(buf);
   }
@@ -94,7 +93,8 @@ static void exceptionDialog(int line, int num, ...) {
   va_end(args);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv)
+{
   std::shared_ptr<spdlog::logger> logger;
 
   std::vector<std::string> arguments;
@@ -107,17 +107,17 @@ int main(int argc, char **argv) {
     logger->set_pattern("%H:%M:%S.%e [%L] (proxy) %v");
 
     instance = getParameter<std::string>(arguments, "instance", true);
-  } catch (const std::exception &e) {
+  } catch (const std::exception& e) {
     if (logger.get() == nullptr) {
       exceptionDialog(__LINE__, 1, e.what());
       return 1;
     }
     try {
       logger->critical("{}", e.what());
-    } catch (const spdlog::spdlog_ex &e2) {
+    } catch (const spdlog::spdlog_ex& e2) {
       exceptionDialog(__LINE__, 2, e.what(), e2.what());
       // no way to log this
-    } catch (const std::exception &) {
+    } catch (const std::exception&) {
       logger->critical(e.what());
     }
     return 1;
@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
     logger->info("size: {}", configurationSHM.get_size());
     logger->info("addr: {0:p}", configurationSHM.get_address());
     logger->info("objs: {}", configurationSHM.get_num_named_objects());
-    std::pair<SharedParameters *, SharedMemoryT::size_type> params =
+    std::pair<SharedParameters*, SharedMemoryT::size_type> params =
         configurationSHM.find<SharedParameters>("parameters");
     if (params.first == nullptr) {
       logger->error("failed to open shared configuration for {}", instance);
@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
 
     if (executable.empty()) {
       HANDLE processHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-      HANDLE threadHandle = INVALID_HANDLE_VALUE;
+      HANDLE threadHandle  = INVALID_HANDLE_VALUE;
       if (tid != 0) {
         threadHandle = OpenThread(THREAD_ALL_ACCESS, FALSE, tid);
       }
@@ -165,7 +165,8 @@ int main(int argc, char **argv) {
       BOOL blacklisted = FALSE;
       TCHAR szModName[MAX_PATH];
 
-      if (GetModuleFileNameEx(processHandle, NULL, szModName, sizeof(szModName) / sizeof(TCHAR))) {
+      if (GetModuleFileNameEx(processHandle, NULL, szModName,
+                              sizeof(szModName) / sizeof(TCHAR))) {
         const auto appName = usvfs::shared::string_cast<std::string>(szModName);
 
         if (params.first->executableBlacklisted(appName, {})) {
@@ -175,9 +176,8 @@ int main(int argc, char **argv) {
       }
 
       if (!blacklisted) {
-        usvfs::injectProcess(
-          p.parent_path().wstring(), params.first->makeLocal(),
-          processHandle, threadHandle);
+        usvfs::injectProcess(p.parent_path().wstring(), params.first->makeLocal(),
+                             processHandle, threadHandle);
       }
     } else {
       winapi::process::Result process =
@@ -193,30 +193,28 @@ int main(int argc, char **argv) {
       BOOL blacklisted = FALSE;
 
       if (params.first->executableBlacklisted(executable, {})) {
-        logger->info(
-          "not injecting {} as application is blacklisted", executable);
+        logger->info("not injecting {} as application is blacklisted", executable);
 
         blacklisted = TRUE;
       }
 
       if (!blacklisted) {
-        usvfs::injectProcess(
-          p.parent_path().wstring(), params.first->makeLocal(),
-          process.processInfo);
+        usvfs::injectProcess(p.parent_path().wstring(), params.first->makeLocal(),
+                             process.processInfo);
       }
 
       ResumeThread(process.processInfo.hThread);
     }
 
     return 0;
-  } catch (const std::exception &e) {
+  } catch (const std::exception& e) {
     try {
       logger->critical("unhandled exception: {}", e.what());
       logExtInfo(e);
-    } catch (const spdlog::spdlog_ex &e2) {
+    } catch (const spdlog::spdlog_ex& e2) {
       // no way to log this
       exceptionDialog(__LINE__, 2, e.what(), e2.what());
-    } catch (const std::exception &) {
+    } catch (const std::exception&) {
       logger->critical(e.what());
     }
   }

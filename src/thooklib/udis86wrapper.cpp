@@ -18,17 +18,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
-#include "pch.h"
 #include "udis86wrapper.h"
+#include "pch.h"
 #include <boost/predef.h>
-#include <stdexcept>
 #include <shmlogger.h>
+#include <stdexcept>
 
+namespace HookLib
+{
 
-namespace HookLib {
-
-
-UDis86Wrapper::UDis86Wrapper() {
+UDis86Wrapper::UDis86Wrapper()
+{
   ud_init(&m_Obj);
   ud_set_syntax(&m_Obj, UD_SYN_INTEL);
 #if BOOST_ARCH_X86_64
@@ -38,14 +38,14 @@ UDis86Wrapper::UDis86Wrapper() {
 #endif
 }
 
-void UDis86Wrapper::setInputBuffer(const uint8_t *buffer, size_t size)
+void UDis86Wrapper::setInputBuffer(const uint8_t* buffer, size_t size)
 {
   m_Buffer = buffer;
   ud_set_input_buffer(&m_Obj, buffer, size);
   ud_set_pc(&m_Obj, reinterpret_cast<uint64_t>(m_Buffer));
 }
 
-ud_t &UDis86Wrapper::obj()
+ud_t& UDis86Wrapper::obj()
 {
   return m_Obj;
 }
@@ -53,47 +53,36 @@ ud_t &UDis86Wrapper::obj()
 bool UDis86Wrapper::isRelativeJump()
 {
   ud_mnemonic_code code = ud_insn_mnemonic(&m_Obj);
-  // all conditional jumps and loops are relative, as are unconditional jumps with an offset
-  // operand
-  return  (code == UD_Ijo) ||
-          (code == UD_Ijno) ||
-          (code == UD_Ijb) ||
-          (code == UD_Ijae) ||
-          (code == UD_Ijz) ||
-          (code == UD_Ijnz) ||
-          (code == UD_Ijbe) ||
-          (code == UD_Ija) ||
-          (code == UD_Ijs) ||
-          (code == UD_Ijns) ||
-          (code == UD_Ijp) ||
-          (code == UD_Ijnp) ||
-          (code == UD_Ijl) ||
-          (code == UD_Ijge) ||
-          (code == UD_Ijle) ||
-          (code == UD_Ijg) ||
-          (code == UD_Ijcxz) ||
-          (code == UD_Ijecxz) ||
-          (code == UD_Ijrcxz) ||
-          (code == UD_Iloop) ||
-          (code == UD_Iloope) ||
-          (code == UD_Iloopne) ||
-          ((code == UD_Icall) && (ud_insn_opr(&m_Obj, 0)->type == UD_OP_JIMM)) ||
-      ((code == UD_Ijmp) && (ud_insn_opr(&m_Obj, 0)->type == UD_OP_JIMM));
+  // all conditional jumps and loops are relative, as are unconditional jumps with an
+  // offset operand
+  return (code == UD_Ijo) || (code == UD_Ijno) || (code == UD_Ijb) ||
+         (code == UD_Ijae) || (code == UD_Ijz) || (code == UD_Ijnz) ||
+         (code == UD_Ijbe) || (code == UD_Ija) || (code == UD_Ijs) ||
+         (code == UD_Ijns) || (code == UD_Ijp) || (code == UD_Ijnp) ||
+         (code == UD_Ijl) || (code == UD_Ijge) || (code == UD_Ijle) ||
+         (code == UD_Ijg) || (code == UD_Ijcxz) || (code == UD_Ijecxz) ||
+         (code == UD_Ijrcxz) || (code == UD_Iloop) || (code == UD_Iloope) ||
+         (code == UD_Iloopne) ||
+         ((code == UD_Icall) && (ud_insn_opr(&m_Obj, 0)->type == UD_OP_JIMM)) ||
+         ((code == UD_Ijmp) && (ud_insn_opr(&m_Obj, 0)->type == UD_OP_JIMM));
 }
-
 
 intptr_t UDis86Wrapper::jumpOffset()
 {
-  const ud_operand_t *op = ud_insn_opr(&m_Obj, 0);
+  const ud_operand_t* op = ud_insn_opr(&m_Obj, 0);
   switch (op->size) {
-    case 8:  return static_cast<intptr_t>(op->lval.sbyte);
-    case 16: return static_cast<intptr_t>(op->lval.sword);
-    case 32: return static_cast<intptr_t>(op->lval.sdword);
-    case 64: return static_cast<intptr_t>(op->lval.sqword);
-    default: throw std::runtime_error("unsupported jump size");
+  case 8:
+    return static_cast<intptr_t>(op->lval.sbyte);
+  case 16:
+    return static_cast<intptr_t>(op->lval.sword);
+  case 32:
+    return static_cast<intptr_t>(op->lval.sdword);
+  case 64:
+    return static_cast<intptr_t>(op->lval.sqword);
+  default:
+    throw std::runtime_error("unsupported jump size");
   }
 }
-
 
 uint64_t UDis86Wrapper::jumpTarget()
 {
@@ -110,4 +99,4 @@ uint64_t UDis86Wrapper::jumpTarget()
   return res;
 }
 
-} // namespace HookLib
+}  // namespace HookLib

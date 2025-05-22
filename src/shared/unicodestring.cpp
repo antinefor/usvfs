@@ -19,9 +19,9 @@ You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "unicodestring.h"
-#include "stringutils.h"
-#include "stringcast.h"
 #include "logging.h"
+#include "stringcast.h"
+#include "stringutils.h"
 
 namespace usvfs
 {
@@ -58,8 +58,7 @@ UnicodeString& UnicodeString::appendPath(PUNICODE_STRING path)
     if (appendAt) {
       m_Buffer.resize(m_Buffer.size() + path->Length / sizeof(WCHAR) + 1);
       m_Buffer[appendAt++] = L'\\';
-    }
-    else
+    } else
       m_Buffer.resize(path->Length / sizeof(WCHAR) + 1);
     memcpy(&m_Buffer[appendAt], path->Buffer, path->Length);
     update();
@@ -70,9 +69,9 @@ UnicodeString& UnicodeString::appendPath(PUNICODE_STRING path)
 
 void UnicodeString::update()
 {
-  m_Data.Length = static_cast<USHORT>(size() * sizeof(WCHAR));
+  m_Data.Length        = static_cast<USHORT>(size() * sizeof(WCHAR));
   m_Data.MaximumLength = static_cast<USHORT>((m_Buffer.capacity() - 1) * sizeof(WCHAR));
-  m_Data.Buffer = m_Buffer.data();
+  m_Data.Buffer        = m_Buffer.data();
 }
 
-}
+}  // namespace usvfs

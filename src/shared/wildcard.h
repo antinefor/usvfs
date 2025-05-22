@@ -51,7 +51,6 @@ bool Match(LPCWSTR pszString, LPCWSTR pszMatch);
  */
 bool Match(LPCSTR pszString, LPCSTR pszMatch);
 
-
 /**
  * @brief match string to wildcard windows-style
  * @param pszString Input string to match
@@ -65,4 +64,4 @@ bool Match(LPCSTR pszString, LPCSTR pszMatch);
  */
 LPCSTR PartialMatch(LPCSTR pszString, LPCSTR pszMatch);
 
-} // namespace
+}  // namespace usvfs::shared::wildcard

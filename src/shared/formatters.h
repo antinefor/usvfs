@@ -27,10 +27,11 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 
 // formatters for standard types
 
-namespace usvfs::log {
-  std::string to_string(LPCWSTR value);
-  std::string to_string(PCUNICODE_STRING value);
-}
+namespace usvfs::log
+{
+std::string to_string(LPCWSTR value);
+std::string to_string(PCUNICODE_STRING value);
+}  // namespace usvfs::log
 
 template <class Enum, class CharT>
   requires std::is_enum_v<Enum>
@@ -40,7 +41,7 @@ struct std::formatter<Enum, CharT> : std::formatter<std::underlying_type_t<Enum>
   FmtContext::iterator format(Enum v, FmtContext& ctx) const
   {
     return std::formatter<std::underlying_type_t<Enum>, CharT>::format(
-      static_cast<std::underlying_type_t<Enum>>(v), ctx);
+        static_cast<std::underlying_type_t<Enum>>(v), ctx);
   }
 };
 
@@ -85,11 +86,9 @@ struct std::formatter<UNICODE_STRING, char> : std::formatter<std::string, char>
 };
 
 template <class Pointer>
-  requires (std::is_pointer_v<Pointer>
-    && !std::is_same_v<Pointer, const char*>
-    && !std::is_same_v<Pointer, char*>
-    && !std::is_same_v<Pointer, const void*> 
-    && !std::is_same_v<Pointer, void*>)
+  requires(std::is_pointer_v<Pointer> && !std::is_same_v<Pointer, const char*> &&
+           !std::is_same_v<Pointer, char*> && !std::is_same_v<Pointer, const void*> &&
+           !std::is_same_v<Pointer, void*>)
 struct std::formatter<Pointer, char> : std::formatter<const void*, char>
 {
   template <class FmtContext>
@@ -99,22 +98,21 @@ struct std::formatter<Pointer, char> : std::formatter<const void*, char>
   }
 };
 
-
-namespace usvfs::log 
+namespace usvfs::log
 {
 
 /**
-  * a small helper class to wrap any object. The whole point is to give us a way
-  * to ensure our own operator<< is used in addParam calls
-  */
+ * a small helper class to wrap any object. The whole point is to give us a way
+ * to ensure our own operator<< is used in addParam calls
+ */
 template <typename T>
 class Wrap
 {
 public:
-  explicit Wrap(const T& data) : m_Data(data) { }
-  Wrap(Wrap<T>&& reference) : m_Data(std::move(reference.m_Data)) { }
+  explicit Wrap(const T& data) : m_Data(data) {}
+  Wrap(Wrap<T>&& reference) : m_Data(std::move(reference.m_Data)) {}
 
-  Wrap(const Wrap<T>& reference) = delete;
+  Wrap(const Wrap<T>& reference)               = delete;
   Wrap<T>& operator=(const Wrap<T>& reference) = delete;
 
 private:
@@ -128,7 +126,7 @@ Wrap<T> wrap(const T& data)
   return Wrap<T>(data);
 }
 
-}
+}  // namespace usvfs::log
 
 template <>
 struct std::formatter<usvfs::log::Wrap<DWORD>, char> : std::formatter<DWORD, char>
@@ -144,7 +142,8 @@ template <>
 struct std::formatter<usvfs::log::Wrap<NTSTATUS>, char> : std::formatter<NTSTATUS, char>
 {
   template <class FmtContext>
-  FmtContext::iterator format(const usvfs::log::Wrap<NTSTATUS>& v, FmtContext& ctx) const
+  FmtContext::iterator format(const usvfs::log::Wrap<NTSTATUS>& v,
+                              FmtContext& ctx) const
   {
     switch (v.m_Data) {
     case 0x00000000:

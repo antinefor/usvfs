@@ -16,16 +16,14 @@ bool TestFileSystem::FileInformation::is_file() const
   return (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
 }
 
-TestFileSystem::TestFileSystem(FILE* output)
-  : m_output(output)
-{}
+TestFileSystem::TestFileSystem(FILE* output) : m_output(output) {}
 
 TestFileSystem::path TestFileSystem::current_directory()
 {
   DWORD res = GetCurrentDirectoryW(0, NULL);
   if (!res)
     throw_testWinFuncFailed("GetCurrentDirectory", res);
-  std::wstring buf(res + 1,'\0');
+  std::wstring buf(res + 1, '\0');
   res = GetCurrentDirectoryW(buf.length(), &buf[0]);
   if (!res || res >= buf.length())
     throw_testWinFuncFailed("GetCurrentDirectory", res);
@@ -38,7 +36,7 @@ TestFileSystem::path TestFileSystem::relative_path(path full_path)
   return test::path_as_relative(m_basepath, full_path);
 }
 
-//static
+// static
 const char* TestFileSystem::write_operation_name(write_mode mode)
 {
   switch (mode) {
@@ -58,8 +56,9 @@ const char* TestFileSystem::write_operation_name(write_mode mode)
   return "Unknown write operation?!";
 }
 
-//static
-const char* TestFileSystem::rename_operation_name(bool replace_existing, bool allow_copy)
+// static
+const char* TestFileSystem::rename_operation_name(bool replace_existing,
+                                                  bool allow_copy)
 {
   if (allow_copy)
     return replace_existing ? "Moving file over" : "Moving file";
@@ -70,16 +69,22 @@ const char* TestFileSystem::rename_operation_name(bool replace_existing, bool al
 void TestFileSystem::print_operation(const char* operation, const path& target)
 {
   if (m_output)
-    fprintf(m_output, "# (%s) %s {%s}\n", id(), operation, relative_path(target).string().c_str());
+    fprintf(m_output, "# (%s) %s {%s}\n", id(), operation,
+            relative_path(target).string().c_str());
 }
 
-void TestFileSystem::print_operation(const char* operation, const path& source, const path& target)
+void TestFileSystem::print_operation(const char* operation, const path& source,
+                                     const path& target)
 {
   if (m_output)
-    fprintf(m_output, "# (%s) %s {%s} {%s}\n", id(), operation, relative_path(source).string().c_str(), relative_path(target).string().c_str());
+    fprintf(m_output, "# (%s) %s {%s} {%s}\n", id(), operation,
+            relative_path(source).string().c_str(),
+            relative_path(target).string().c_str());
 }
 
-static inline void print_op_with_result(FILE* output, const char* prefix, const char* operation, const uint32_t* result, DWORD* last_error, const char* opt_arg)
+static inline void print_op_with_result(FILE* output, const char* prefix,
+                                        const char* operation, const uint32_t* result,
+                                        DWORD* last_error, const char* opt_arg)
 {
   if (output) {
     fprintf(output, "%s%s", prefix, operation);
@@ -93,33 +98,43 @@ static inline void print_op_with_result(FILE* output, const char* prefix, const 
   }
 }
 
-void TestFileSystem::print_result(const char* operation, uint32_t result, bool with_last_error, const char* opt_arg, bool hide_result)
+void TestFileSystem::print_result(const char* operation, uint32_t result,
+                                  bool with_last_error, const char* opt_arg,
+                                  bool hide_result)
 {
-  if (m_output)
-  {
-    DWORD last_error = GetLastError();
-    std::string prefix = "# ("; prefix += id(); prefix += ")   ";
-    print_op_with_result(m_output, prefix.c_str(), operation, hide_result ? nullptr : &result, with_last_error ? &last_error : nullptr, opt_arg);
+  if (m_output) {
+    DWORD last_error   = GetLastError();
+    std::string prefix = "# (";
+    prefix += id();
+    prefix += ")   ";
+    print_op_with_result(m_output, prefix.c_str(), operation,
+                         hide_result ? nullptr : &result,
+                         with_last_error ? &last_error : nullptr, opt_arg);
     SetLastError(last_error);
   }
 }
 
-void TestFileSystem::print_error(const char* operation, uint32_t result, bool with_last_error, const char* opt_arg)
+void TestFileSystem::print_error(const char* operation, uint32_t result,
+                                 bool with_last_error, const char* opt_arg)
 {
   DWORD last_error = with_last_error ? GetLastError() : 0;
-  print_op_with_result(stderr, "ERROR: ", operation, &result, with_last_error ? &last_error : nullptr, opt_arg);
+  print_op_with_result(stderr, "ERROR: ", operation, &result,
+                       with_last_error ? &last_error : nullptr, opt_arg);
   if (m_output && m_output != stdout)
-    print_op_with_result(m_output, "ERROR: ", operation, &result, with_last_error ? &last_error : nullptr, opt_arg);
+    print_op_with_result(m_output, "ERROR: ", operation, &result,
+                         with_last_error ? &last_error : nullptr, opt_arg);
 }
 
-void TestFileSystem::print_write_success(const void* data, std::size_t size, std::size_t written)
+void TestFileSystem::print_write_success(const void* data, std::size_t size,
+                                         std::size_t written)
 {
-  if (m_output)
-  {
-    fprintf(m_output, "# Successfully written %u bytes ", static_cast<unsigned>(written));
+  if (m_output) {
+    fprintf(m_output, "# Successfully written %u bytes ",
+            static_cast<unsigned>(written));
     // heuristics to print nicer one liners:
-    if (size == 1 && reinterpret_cast<const char*>(data)[0] == '\n'
-      || size == 2 && reinterpret_cast<const char*>(data)[0] == '\r' && reinterpret_cast<const char*>(data)[1] == '\n')
+    if (size == 1 && reinterpret_cast<const char*>(data)[0] == '\n' ||
+        size == 2 && reinterpret_cast<const char*>(data)[0] == '\r' &&
+            reinterpret_cast<const char*>(data)[1] == '\n')
       fprintf(m_output, "<newline>");
     else {
       fprintf(m_output, "{");

@@ -1,10 +1,10 @@
+#include <boost/filesystem.hpp>
+#include <boost/type_traits.hpp>
 #include <gtest/gtest.h>
 #include <injectlib.h>
-#include <boost/type_traits.hpp>
-#include <boost/filesystem.hpp>
-#include <winapi.h>
-#include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_sinks.h>
+#include <spdlog/spdlog.h>
+#include <winapi.h>
 
 using namespace usvfs::shared;
 using namespace InjectLib;
@@ -30,29 +30,22 @@ static std::shared_ptr<spdlog::logger> logger()
   return result;
 }
 
-bool spawn(HANDLE &processHandle, HANDLE &threadHandle)
+bool spawn(HANDLE& processHandle, HANDLE& threadHandle)
 {
   STARTUPINFO si;
   ::ZeroMemory(&si, sizeof(si));
   si.cb = sizeof(si);
 
   PROCESS_INFORMATION pi;
-  BOOL success = ::CreateProcess(INJECT_BIN,
-                                 nullptr,
-                                 nullptr, nullptr,
-                                 FALSE,
-                                 CREATE_SUSPENDED,
-                                 nullptr,
-                                 nullptr,
-                                 &si, &pi
-                                 );
+  BOOL success = ::CreateProcess(INJECT_BIN, nullptr, nullptr, nullptr, FALSE,
+                                 CREATE_SUSPENDED, nullptr, nullptr, &si, &pi);
 
   if (!success) {
     throw windows_error("failed to start process");
   }
 
   processHandle = pi.hProcess;
-  threadHandle = pi.hThread;
+  threadHandle  = pi.hThread;
 
   return true;
 }
@@ -66,9 +59,9 @@ TEST(InjectingTest, InjectionNoInit)
   EXPECT_NO_THROW(InjectLib::InjectDLL(process, thread, INJECT_LIB));
   ResumeThread(thread);
 
-  DWORD res = WaitForSingleObject(process, INFINITE);
+  DWORD res      = WaitForSingleObject(process, INFINITE);
   DWORD exitCode = NO_ERROR;
-  res = GetExitCodeProcess(process, &exitCode);
+  res            = GetExitCodeProcess(process, &exitCode);
   EXPECT_EQ(NOERROR, exitCode);
 
   CloseHandle(process);
@@ -81,14 +74,13 @@ TEST(InjectingTest, InjectionSimpleInit)
 
   HANDLE process, thread;
   spawn(process, thread);
-  EXPECT_NO_THROW(InjectLib::InjectDLL(process, thread, INJECT_LIB,
-                                       "InitNoParam"));
+  EXPECT_NO_THROW(InjectLib::InjectDLL(process, thread, INJECT_LIB, "InitNoParam"));
   ResumeThread(thread);
 
-  DWORD res = WaitForSingleObject(process, INFINITE);
+  DWORD res      = WaitForSingleObject(process, INFINITE);
   DWORD exitCode = NO_ERROR;
-  res = GetExitCodeProcess(process, &exitCode);
-  EXPECT_EQ(10001, exitCode); // used init function exits process with this exit code
+  res            = GetExitCodeProcess(process, &exitCode);
+  EXPECT_EQ(10001, exitCode);  // used init function exits process with this exit code
 
   CloseHandle(process);
   CloseHandle(thread);
@@ -101,17 +93,16 @@ TEST(InjectingTest, InjectionComplexInit)
   static const WCHAR param[] = L"magic_parameter";
   HANDLE process, thread;
   spawn(process, thread);
-  EXPECT_NO_THROW(InjectLib::InjectDLL(process, thread, INJECT_LIB,
-                                       "InitComplexParam",
+  EXPECT_NO_THROW(InjectLib::InjectDLL(process, thread, INJECT_LIB, "InitComplexParam",
                                        reinterpret_cast<LPCVOID>(param),
                                        wcslen(param) * sizeof(WCHAR)));
 
   ResumeThread(thread);
 
-  DWORD res = WaitForSingleObject(process, INFINITE);
+  DWORD res      = WaitForSingleObject(process, INFINITE);
   DWORD exitCode = NO_ERROR;
-  res = GetExitCodeProcess(process, &exitCode);
-  EXPECT_EQ(10002, exitCode); // used init function exits process with this exit code
+  res            = GetExitCodeProcess(process, &exitCode);
+  EXPECT_EQ(10002, exitCode);  // used init function exits process with this exit code
 
   CloseHandle(process);
   CloseHandle(thread);
@@ -123,14 +114,13 @@ TEST(InjectingTest, InjectionNoQuitInit)
 
   HANDLE process, thread;
   spawn(process, thread);
-  EXPECT_NO_THROW(InjectLib::InjectDLL(process, thread, INJECT_LIB,
-                                       "InitNoQuit"));
+  EXPECT_NO_THROW(InjectLib::InjectDLL(process, thread, INJECT_LIB, "InitNoQuit"));
   ResumeThread(thread);
 
-  DWORD res = WaitForSingleObject(process, INFINITE);
+  DWORD res      = WaitForSingleObject(process, INFINITE);
   DWORD exitCode = NO_ERROR;
-  res = GetExitCodeProcess(process, &exitCode);
-  EXPECT_EQ(0, exitCode); // expect regular exit from process
+  res            = GetExitCodeProcess(process, &exitCode);
+  EXPECT_EQ(0, exitCode);  // expect regular exit from process
 
   CloseHandle(process);
   CloseHandle(thread);
@@ -142,20 +132,21 @@ TEST(InjectingTest, InjectionSkipInit)
 
   HANDLE process, thread;
   spawn(process, thread);
-  EXPECT_NO_THROW(InjectLib::InjectDLL(process, thread, INJECT_LIB,
-                                       "__InitInvalid", nullptr, 0, true));
+  EXPECT_NO_THROW(InjectLib::InjectDLL(process, thread, INJECT_LIB, "__InitInvalid",
+                                       nullptr, 0, true));
   ResumeThread(thread);
 
-  DWORD res = WaitForSingleObject(process, INFINITE);
+  DWORD res      = WaitForSingleObject(process, INFINITE);
   DWORD exitCode = NO_ERROR;
-  res = GetExitCodeProcess(process, &exitCode);
+  res            = GetExitCodeProcess(process, &exitCode);
   EXPECT_EQ(NOERROR, exitCode);
 
   CloseHandle(process);
   CloseHandle(thread);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv)
+{
   auto logger = spdlog::stdout_logger_mt("usvfs");
   logger->set_level(spdlog::level::warn);
 

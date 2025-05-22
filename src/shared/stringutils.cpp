@@ -24,7 +24,7 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 namespace usvfs::shared
 {
 
-void strncpy_sz(char *dest, const char *src, size_t destSize)
+void strncpy_sz(char* dest, const char* src, size_t destSize)
 {
   if (destSize > 0) {
     strncpy(dest, src, destSize - 1);
@@ -32,7 +32,7 @@ void strncpy_sz(char *dest, const char *src, size_t destSize)
   }
 }
 
-void wcsncpy_sz(wchar_t *dest, const wchar_t *src, size_t destSize)
+void wcsncpy_sz(wchar_t* dest, const wchar_t* src, size_t destSize)
 {
   if ((destSize > 0) && (dest != nullptr)) {
     wcsncpy(dest, src, destSize - 1);
@@ -40,8 +40,7 @@ void wcsncpy_sz(wchar_t *dest, const wchar_t *src, size_t destSize)
   }
 }
 
-
-bool startswith(const wchar_t *string, const wchar_t *subString)
+bool startswith(const wchar_t* string, const wchar_t* subString)
 {
   while ((*string != '\0') && (*subString != '\0')) {
     if (towlower(*string) != towlower(*subString)) {
@@ -54,7 +53,7 @@ bool startswith(const wchar_t *string, const wchar_t *subString)
   return *subString == '\0';
 }
 
-static fs::path normalize(const fs::path &path)
+static fs::path normalize(const fs::path& path)
 {
   fs::path result;
 
@@ -65,12 +64,12 @@ static fs::path normalize(const fs::path &path)
       result = result.parent_path();
     } else if (*iter != ".") {
       result /= boost::to_lower_copy(iter->string(), loc);
-    } // single dot is ignored
+    }  // single dot is ignored
   }
   return result;
 }
 
-fs::path make_relative(const fs::path &fromIn, const fs::path &toIn)
+fs::path make_relative(const fs::path& fromIn, const fs::path& toIn)
 {
   // converting path to lower case to make iterator comparison work correctly
   // on case-insenstive filesystems
@@ -105,9 +104,9 @@ fs::path make_relative(const fs::path &fromIn, const fs::path &toIn)
   return result;
 }
 
-std::string to_hex(void *bufferIn, size_t bufferSize)
+std::string to_hex(void* bufferIn, size_t bufferSize)
 {
-  unsigned char *buffer = static_cast<unsigned char *>(bufferIn);
+  unsigned char* buffer = static_cast<unsigned char*>(bufferIn);
   std::ostringstream temp;
   temp << std::hex;
   for (size_t i = 0; i < bufferSize; ++i) {
@@ -121,7 +120,7 @@ std::string to_hex(void *bufferIn, size_t bufferSize)
   return temp.str();
 }
 
-std::wstring to_upper(const std::wstring &input)
+std::wstring to_upper(const std::wstring& input)
 {
   std::wstring result;
   result.resize(input.size());
@@ -144,4 +143,4 @@ std::string byte_string(std::size_t n)
   return s + " B";
 }
 
-} // namespace
+}  // namespace usvfs::shared
