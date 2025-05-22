@@ -6,10 +6,11 @@
 #include <vector>
 
 #define WIN32_LEAN_AND_MEAN
-#include "test_ntdll_declarations.h"
 #include <Windows.h>
 #include <Winternl.h>
 #include <stdio.h>
+
+#include "test_ntdll_declarations.h"
 
 class TestNtApi::SafeHandle
 {

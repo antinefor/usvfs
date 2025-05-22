@@ -33,15 +33,17 @@
 #define NOMINMAX
 #endif
 
+// clang-format off
 #define WIN32_LEAN_AND_MEAN
-#include <DbgHelp.h>
-#include <Psapi.h>
-#include <ShlObj.h>
 #include <Windows.h>
+#include <ShlObj.h>
 #include <comutil.h>
-#include <fileapi.h>
+#include <Psapi.h>
 #include <shellapi.h>
 #include <shlwapi.h>
+#include <fileapi.h>
+#include <DbgHelp.h>
+// clang-format on
 
 #define BOOST_INTERPROCESS_SEGMENT_MANAGER_ABI 1
 #include <boost/algorithm/string.hpp>
