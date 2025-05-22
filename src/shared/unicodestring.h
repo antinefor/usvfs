@@ -20,8 +20,8 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
 
-#include "windows_sane.h"
 #include "ntdll_declarations.h"
+#include "windows_sane.h"
 
 #include "formatters.h"
 
@@ -34,20 +34,11 @@ namespace usvfs
 class UnicodeString
 {
 public:
-  UnicodeString()
-    : m_Buffer(1)
-  {
-    update();
-  }
+  UnicodeString() : m_Buffer(1) { update(); }
 
-  UnicodeString(const UnicodeString& other)
-    : m_Buffer(other.m_Buffer)
-  {
-    update();
-  }
+  UnicodeString(const UnicodeString& other) : m_Buffer(other.m_Buffer) { update(); }
 
-  UnicodeString(UnicodeString&& other)
-    : m_Buffer(std::move(other.m_Buffer))
+  UnicodeString(UnicodeString&& other) : m_Buffer(std::move(other.m_Buffer))
   {
     update();
   }
@@ -75,37 +66,24 @@ public:
    * @brief convert to a WinNt Api-style unicode string. This is only valid as long
    *        as the string isn't modified
    */
-  explicit operator PUNICODE_STRING()
-  {
-    return &m_Data;
-  }
+  explicit operator PUNICODE_STRING() { return &m_Data; }
 
   /**
    * @brief convert to a Win32 Api-style unicode string. This is only valid as long
    *        as the string isn't modified
    */
-  explicit operator LPCWSTR() const
-  {
-    return m_Data.Buffer;
-  }
+  explicit operator LPCWSTR() const { return m_Data.Buffer; }
 
   /**
    * @return length of the string in 16-bit words (not including zero termination)
    */
-  size_t size() const
-  {
-    return m_Buffer.size() - 1;
-  }
+  size_t size() const { return m_Buffer.size() - 1; }
 
-  wchar_t operator[](size_t pos) const
-  {
-    return m_Buffer[pos];
-  }
+  wchar_t operator[](size_t pos) const { return m_Buffer[pos]; }
 
-  UnicodeString &appendPath(PUNICODE_STRING path);
+  UnicodeString& appendPath(PUNICODE_STRING path);
 
 private:
-
   friend struct ::std::formatter<UnicodeString, char>;
 
   void update();
@@ -114,18 +92,18 @@ private:
   std::vector<wchar_t> m_Buffer;
 };
 
-} // namespace
+}  // namespace usvfs
 
 template <>
-struct std::formatter<usvfs::UnicodeString, char> : std::formatter<PCUNICODE_STRING, char>
+struct std::formatter<usvfs::UnicodeString, char>
+    : std::formatter<PCUNICODE_STRING, char>
 {
   template <class FmtContext>
   FmtContext::iterator format(const usvfs::UnicodeString& v, FmtContext& ctx) const
   {
     if (v.size() == 0) {
       return std::format_to(ctx.out(), "<empty string>");
-    }
-    else {
+    } else {
       return std::formatter<PCUNICODE_STRING, char>::format(&v.m_Data, ctx);
     }
   }

@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <gtest_utils.h>
 #include <test_helpers.h>
 #include <usvfs.h>
-#include <gtest_utils.h>
 
 #include "usvfs_global_test_fixture.h"
 

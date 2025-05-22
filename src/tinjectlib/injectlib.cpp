@@ -18,24 +18,24 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
-#include <stdexcept>
 #include <cstdio>
+#include <stdexcept>
 
-#include <boost/predef.h>
 #include <boost/filesystem.hpp>
+#include <boost/predef.h>
 #include <boost/static_assert.hpp>
 #include <boost/type_traits.hpp>
 namespace fs = boost::filesystem;
 
 #include "injectlib.h"
-#include <stringutils.h>
-#include <stringcast.h>
-#include <exceptionex.h>
 #include <addrtools.h>
+#include <exceptionex.h>
+#include <stringcast.h>
+#include <stringutils.h>
 // local version of asmjit with warning suppression
 #include "asmjit_sane.h"
-#include <spdlog/spdlog.h>
 #include <TlHelp32.h>
+#include <spdlog/spdlog.h>
 
 using namespace asmjit;
 using namespace usvfs::shared;
@@ -50,16 +50,16 @@ using namespace asmjit::x86;
 #error "unsupported architecture"
 #endif
 
+typedef HMODULE(WINAPI* TLoadLibraryType)(LPCWSTR);
+typedef FARPROC(WINAPI* TGetProcAddressType)(HMODULE, LPCSTR);
+typedef DWORD(WINAPI* TGetLastErrorType)();
 
-typedef HMODULE (WINAPI *TLoadLibraryType)(LPCWSTR);
-typedef FARPROC (WINAPI *TGetProcAddressType)(HMODULE, LPCSTR);
-typedef DWORD (WINAPI *TGetLastErrorType)();
-
-typedef BOOL (WINAPI *TSetXStateFeaturesMaskType)(PCONTEXT, DWORD64);
+typedef BOOL(WINAPI* TSetXStateFeaturesMaskType)(PCONTEXT, DWORD64);
 
 static const size_t MAX_FUNCTIONAME = 20;
 
-struct TDataRemote {
+struct TDataRemote
+{
   TLoadLibraryType loadLibrary;
   TGetProcAddressType getProcAddress;
   TGetLastErrorType getLastError;
@@ -69,9 +69,8 @@ struct TDataRemote {
   WCHAR dllName[MAX_PATH];
 };
 
-
 #if BOOST_ARCH_X86_64
-void pushAll(X86Assembler &assembler)
+void pushAll(X86Assembler& assembler)
 {
   assembler.pushf();
   assembler.push(rax);
@@ -91,7 +90,7 @@ void pushAll(X86Assembler &assembler)
   assembler.push(r15);
 }
 
-void popAll(X86Assembler &assembler)
+void popAll(X86Assembler& assembler)
 {
   assembler.pop(r15);
   assembler.pop(r14);
@@ -110,10 +109,10 @@ void popAll(X86Assembler &assembler)
   assembler.pop(rax);
   assembler.popf();
 }
-#endif // BOOST_ARCH_X86_64
+#endif  // BOOST_ARCH_X86_64
 
-void addStub(size_t userDataSize, X86Assembler &assembler, bool skipInit,
-             TDataRemote *localData, TDataRemote *remoteData, LPCSTR initFunction)
+void addStub(size_t userDataSize, X86Assembler& assembler, bool skipInit,
+             TDataRemote* localData, TDataRemote* remoteData, LPCSTR initFunction)
 {
   Label Label_DLLLoaded = assembler.newLabel();
 
@@ -130,12 +129,12 @@ void addStub(size_t userDataSize, X86Assembler &assembler, bool skipInit,
   // TODO: would be great to report this error. But how?
   assembler.test(rax, rax);
   assembler.jnz(Label_DLLLoaded);
-/* this commented out code may seem pointless but it is a simple way to get at the error code when debugging.
-  assembler.mov(rax, imm((intptr_t)(void*)localData->getLastError));
-  assembler.sub(rsp, 32);
-  assembler.call(rax);
-  assembler.add(rsp, 32);
-  assembler.int3();*/
+  /* this commented out code may seem pointless but it is a simple way to get at the
+    error code when debugging. assembler.mov(rax,
+    imm((intptr_t)(void*)localData->getLastError)); assembler.sub(rsp, 32);
+    assembler.call(rax);
+    assembler.add(rsp, 32);
+    assembler.int3();*/
   popAll(assembler);
   assembler.ret();
   assembler.bind(Label_DLLLoaded);
@@ -143,8 +142,9 @@ void addStub(size_t userDataSize, X86Assembler &assembler, bool skipInit,
   // determine address of the init function
   if (initFunction != nullptr) {
     Label Label_SkipInit = assembler.newLabel();
-    assembler.mov(rcx, rax);                                                   // handle of the dll
-    assembler.mov(rdx, imm(reinterpret_cast<int64_t>(remoteData->initFunction)));  // name of init function
+    assembler.mov(rcx, rax);  // handle of the dll
+    assembler.mov(rdx, imm(reinterpret_cast<int64_t>(
+                           remoteData->initFunction)));  // name of init function
     assembler.mov(rax, imm((intptr_t)(void*)localData->getProcAddress));
     assembler.sub(rsp, 32);
     assembler.call(rax);
@@ -156,7 +156,8 @@ void addStub(size_t userDataSize, X86Assembler &assembler, bool skipInit,
     }
 
     // call the init function with user data
-    assembler.mov(rcx, imm(reinterpret_cast<int64_t>(remoteData) + sizeof(TDataRemote)));
+    assembler.mov(rcx,
+                  imm(reinterpret_cast<int64_t>(remoteData) + sizeof(TDataRemote)));
     assembler.mov(rdx, imm(static_cast<int64_t>(userDataSize)));
     assembler.sub(rsp, 32);
     assembler.call(rax);
@@ -174,16 +175,16 @@ void addStub(size_t userDataSize, X86Assembler &assembler, bool skipInit,
 
   // call load library for the actual injection
   assembler.push(imm(void_ptr_cast<int64_t>(remoteData->dllName)));
-//  assembler.call(ptr_abs(static_cast<void*>(remoteData->loadLibrary)));
+  //  assembler.call(ptr_abs(static_cast<void*>(remoteData->loadLibrary)));
   assembler.mov(eax, imm(void_ptr_cast<int64_t>(localData->loadLibrary)));
   assembler.call(eax);
 
   assembler.test(eax, eax);
   assembler.jnz(Label_DLLLoaded);
-/* this commented out code may seem pointless but it is a simple way to get at the error code when debugging.
-  assembler.mov(eax, imm((intptr_t)(void*)localData->getLastError));
-  assembler.call(eax);
-  assembler.int3();*/
+  /* this commented out code may seem pointless but it is a simple way to get at the
+    error code when debugging. assembler.mov(eax,
+    imm((intptr_t)(void*)localData->getLastError)); assembler.call(eax);
+    assembler.int3();*/
   assembler.popf();
   assembler.pop(eax);
   assembler.ret();
@@ -192,8 +193,9 @@ void addStub(size_t userDataSize, X86Assembler &assembler, bool skipInit,
   // determine address of the init function
   if (initFunction != nullptr) {
     Label Label_SkipInit = assembler.newLabel();
-    assembler.push(imm(void_ptr_cast<int64_t>(remoteData->initFunction))); // name of init function
-    assembler.push(eax);                            // handle of the dll
+    assembler.push(imm(
+        void_ptr_cast<int64_t>(remoteData->initFunction)));  // name of init function
+    assembler.push(eax);                                     // handle of the dll
     assembler.mov(eax, imm(void_ptr_cast<int64_t>(localData->getProcAddress)));
     assembler.call(eax);
     if (skipInit) {
@@ -228,25 +230,22 @@ void addStub(size_t userDataSize, X86Assembler &assembler, bool skipInit,
 #endif
 }
 
-
-REGWORD WriteInjectionStub(HANDLE processHandle
-                           , LPCWSTR dllName
-                           , LPCSTR initFunction
-                           , LPCVOID userData
-                           , size_t userDataSize
-                           , bool skipInit
-                           , REGWORD returnAddress)
+REGWORD WriteInjectionStub(HANDLE processHandle, LPCWSTR dllName, LPCSTR initFunction,
+                           LPCVOID userData, size_t userDataSize, bool skipInit,
+                           REGWORD returnAddress)
 {
-  HMODULE k32mod = ::LoadLibrary(__TEXT("kernel32.dll"));
-  TDataRemote data = { 0 };
+  HMODULE k32mod   = ::LoadLibrary(__TEXT("kernel32.dll"));
+  TDataRemote data = {0};
 
   if (k32mod != nullptr) {
-    data.loadLibrary    = reinterpret_cast<TLoadLibraryType>(   GetProcAddress(k32mod, "LoadLibraryW"));
-    data.getProcAddress = reinterpret_cast<TGetProcAddressType>(GetProcAddress(k32mod, "GetProcAddress"));
-    data.getLastError   = reinterpret_cast<TGetLastErrorType>(  GetProcAddress(k32mod, "GetLastError"));
-    if (   (data.loadLibrary    == nullptr)
-        || (data.getProcAddress == nullptr)
-        || (data.getLastError   == nullptr)) {
+    data.loadLibrary =
+        reinterpret_cast<TLoadLibraryType>(GetProcAddress(k32mod, "LoadLibraryW"));
+    data.getProcAddress =
+        reinterpret_cast<TGetProcAddressType>(GetProcAddress(k32mod, "GetProcAddress"));
+    data.getLastError =
+        reinterpret_cast<TGetLastErrorType>(GetProcAddress(k32mod, "GetLastError"));
+    if ((data.loadLibrary == nullptr) || (data.getProcAddress == nullptr) ||
+        (data.getLastError == nullptr)) {
       throw windows_error("failed to determine address for required functions");
     }
   } else {
@@ -269,14 +268,15 @@ REGWORD WriteInjectionStub(HANDLE processHandle
 
   // allocate memory in the target process and write the data-block there
   LPVOID remoteMem = VirtualAllocEx(processHandle, nullptr, totalSize,
-                                      MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+                                    MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
   if (remoteMem == nullptr) {
     throw windows_error("failed to allocate memory in target process");
   }
 
   SIZE_T written;
-  if (!WriteProcessMemory(processHandle, remoteMem, &data, sizeof(TDataRemote), &written)) {
+  if (!WriteProcessMemory(processHandle, remoteMem, &data, sizeof(TDataRemote),
+                          &written)) {
     throw windows_error("failed to write control data to target process");
   }
   if (written != sizeof(TDataRemote)) {
@@ -286,7 +286,7 @@ REGWORD WriteInjectionStub(HANDLE processHandle
   // write user data to remote memory if necessary
   if (userData != nullptr) {
     if (!WriteProcessMemory(processHandle, AddrAdd(remoteMem, sizeof(TDataRemote)),
-                              userData, userDataSize, &written)) {
+                            userData, userDataSize, &written)) {
       throw windows_error("failed to write user data to target process");
     }
     if (written != userDataSize) {
@@ -294,9 +294,10 @@ REGWORD WriteInjectionStub(HANDLE processHandle
     }
   }
 
-  TDataRemote *remoteData = reinterpret_cast<TDataRemote*>(remoteMem);
+  TDataRemote* remoteData = reinterpret_cast<TDataRemote*>(remoteMem);
 
-  // now for the interesting part: write a stub into the target process that is run before any code of the original binary.
+  // now for the interesting part: write a stub into the target process that is run
+  // before any code of the original binary.
 
   JitRuntime runtime;
 #if BOOST_ARCH_X86_64
@@ -306,7 +307,8 @@ REGWORD WriteInjectionStub(HANDLE processHandle
     // (this damages rax which hopefully doesn't matter)
     assembler.mov(rax, imm((intptr_t)(void*)data.returnAddress));
     assembler.push(rax);
-  } // otherwise no return address was specified here. It better be on the stack already
+  }  // otherwise no return address was specified here. It better be on the stack
+     // already
 #else
   X86Assembler assembler(&runtime);
   if (returnAddress != 0) {
@@ -320,16 +322,16 @@ REGWORD WriteInjectionStub(HANDLE processHandle
   size_t stubSize = assembler.getCodeSize();
 
   // reserve memory for the stub
-  PBYTE stubRemote = reinterpret_cast<PBYTE>(VirtualAllocEx(processHandle, nullptr,
-                                                              stubSize,
-                                                              MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
+  PBYTE stubRemote = reinterpret_cast<PBYTE>(
+      VirtualAllocEx(processHandle, nullptr, stubSize, MEM_COMMIT | MEM_RESERVE,
+                     PAGE_EXECUTE_READWRITE));
   if (stubRemote == nullptr) {
     throw windows_error("failed to allocate memory for stub");
   }
 
   // almost there. copy stub to target process
-  if (!WriteProcessMemory(processHandle, stubRemote, assembler.getBuffer(),
-                            stubSize, &written) ||
+  if (!WriteProcessMemory(processHandle, stubRemote, assembler.getBuffer(), stubSize,
+                          &written) ||
       (written != stubSize)) {
     throw windows_error("failed to write stub to target process");
   }
@@ -337,17 +339,13 @@ REGWORD WriteInjectionStub(HANDLE processHandle
   return reinterpret_cast<REGWORD>(stubRemote);
 }
 
-
-void InjectDLLEIP(HANDLE processHandle
-                  , HANDLE threadHandle
-                  , LPCWSTR dllName
-                  , LPCSTR initFunction
-                  , LPCVOID userData
-                  , size_t userDataSize
-                  , bool skipInit)
+void InjectDLLEIP(HANDLE processHandle, HANDLE threadHandle, LPCWSTR dllName,
+                  LPCSTR initFunction, LPCVOID userData, size_t userDataSize,
+                  bool skipInit)
 {
-  threadHandle = OpenThread((THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME),
-                              FALSE, GetThreadId(threadHandle));
+  threadHandle =
+      OpenThread((THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME),
+                 FALSE, GetThreadId(threadHandle));
 
   if (threadHandle == nullptr) {
     throw windows_error("failed to open thread");
@@ -359,10 +357,10 @@ void InjectDLLEIP(HANDLE processHandle
   // documentation says starting with Win7 SP1 you HAVE to call SetXStateFeaturesMask
   HMODULE k32mod = ::LoadLibrary(__TEXT("kernel32.dll"));
   if (k32mod == nullptr) {
-      throw windows_error("failed to load kernel32.dll");
+    throw windows_error("failed to load kernel32.dll");
   }
-  TSetXStateFeaturesMaskType sxsfm =
-      reinterpret_cast<TSetXStateFeaturesMaskType>(GetProcAddress(k32mod, "SetXStateFeaturesMask"));
+  TSetXStateFeaturesMaskType sxsfm = reinterpret_cast<TSetXStateFeaturesMaskType>(
+      GetProcAddress(k32mod, "SetXStateFeaturesMask"));
   if (sxsfm != nullptr) {
     sxsfm(&threadContext, 0);
   }
@@ -378,13 +376,9 @@ void InjectDLLEIP(HANDLE processHandle
   REGWORD returnAddress = threadContext.Eip;
 #endif
 
-  REGWORD stubAddress = WriteInjectionStub(processHandle
-                                           , dllName
-                                           , initFunction
-                                           , userData
-                                           , userDataSize
-                                           , skipInit
-                                           , returnAddress);
+  REGWORD stubAddress =
+      WriteInjectionStub(processHandle, dllName, initFunction, userData, userDataSize,
+                         skipInit, returnAddress);
 
   // make the stub the new next thing for the thread to execute
 #if BOOST_ARCH_X86_64
@@ -398,59 +392,48 @@ void InjectDLLEIP(HANDLE processHandle
   }
 }
 
-
-void InjectDLLRemoteThread(HANDLE processHandle
-                           , LPCWSTR dllName
-                           , LPCSTR initFunction
-                           , LPCVOID userData
-                           , size_t userDataSize
-                           , bool skipInit)
+void InjectDLLRemoteThread(HANDLE processHandle, LPCWSTR dllName, LPCSTR initFunction,
+                           LPCVOID userData, size_t userDataSize, bool skipInit)
 {
-  REGWORD stubAddress = WriteInjectionStub(processHandle
-                                           , dllName
-                                           , initFunction
-                                           , userData
-                                           , userDataSize
-                                           , skipInit
-                                           , 0);
+  REGWORD stubAddress = WriteInjectionStub(processHandle, dllName, initFunction,
+                                           userData, userDataSize, skipInit, 0);
 
-  DWORD threadId = 0UL;
-  HANDLE threadHandle = CreateRemoteThread(processHandle, nullptr, 0,
-                                             reinterpret_cast<LPTHREAD_START_ROUTINE>(stubAddress),
-                                             nullptr, 0, &threadId);
+  DWORD threadId      = 0UL;
+  HANDLE threadHandle = CreateRemoteThread(
+      processHandle, nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(stubAddress),
+      nullptr, 0, &threadId);
   if (threadHandle == nullptr) {
     throw windows_error("failed to start remote thread");
   }
   ResumeThread(threadHandle);
-  spdlog::get("usvfs")->info("waiting for {0:x} to complete", GetThreadId(threadHandle));
+  spdlog::get("usvfs")->info("waiting for {0:x} to complete",
+                             GetThreadId(threadHandle));
   ::WaitForSingleObject(threadHandle, 100);
   ::CloseHandle(threadHandle);
 }
 
-void InjectLib::InjectDLL(HANDLE processHandle
-                          , HANDLE threadHandle
-                          , LPCWSTR dllName
-                          , LPCSTR initFunction
-                          , LPCVOID userData
-                          , size_t userDataSize
-                          , bool skipInit)
+void InjectLib::InjectDLL(HANDLE processHandle, HANDLE threadHandle, LPCWSTR dllName,
+                          LPCSTR initFunction, LPCVOID userData, size_t userDataSize,
+                          bool skipInit)
 {
   namespace bfs = boost::filesystem;
   if (!exists(bfs::path(dllName))) {
-    USVFS_THROW_EXCEPTION(file_not_found_error() << ex_msg(string_cast<std::string>(dllName)));
+    USVFS_THROW_EXCEPTION(file_not_found_error()
+                          << ex_msg(string_cast<std::string>(dllName)));
   }
   if (threadHandle == INVALID_HANDLE_VALUE) {
-#pragma message ("doesn't seem to work as usvfs causes an exception in the first static initialization or pretty much on any function call. Because process is in different session? CRT related?")
+#pragma message(                                                                       \
+    "doesn't seem to work as usvfs causes an exception in the first static initialization or pretty much on any function call. Because process is in different session? CRT related?")
     /*
     InjectDLLRemoteThread(processHandle, dllName,
                  initFunction, userData, userDataSize, skipInit);
                  */
 
-    DWORD pid = GetProcessId(processHandle);
+    DWORD pid       = GetProcessId(processHandle);
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-    THREADENTRY32	threadInfo;
+    THREADENTRY32 threadInfo;
     threadInfo.dwSize = sizeof(THREADENTRY32);
-    BOOL moreThreads = Thread32First(snapshot, &threadInfo);
+    BOOL moreThreads  = Thread32First(snapshot, &threadInfo);
     std::vector<HANDLE> threadHandles;
     HANDLE injectThread = INVALID_HANDLE_VALUE;
     FILETIME injectThreadTime;
@@ -460,27 +443,28 @@ void InjectLib::InjectDLL(HANDLE processHandle
         HANDLE thread = ::OpenThread(THREAD_ALL_ACCESS, FALSE, threadInfo.th32ThreadID);
 
         if (thread != nullptr) {
-            DWORD suspCount = SuspendThread(thread);
-            if (suspCount == 0) {
-                FILETIME creationTime, exitTime, kernelTime, userTime;
-                ::GetThreadTimes(thread, &creationTime, &exitTime, &kernelTime, &userTime);
+          DWORD suspCount = SuspendThread(thread);
+          if (suspCount == 0) {
+            FILETIME creationTime, exitTime, kernelTime, userTime;
+            ::GetThreadTimes(thread, &creationTime, &exitTime, &kernelTime, &userTime);
 
-                if ((injectThread == INVALID_HANDLE_VALUE)
-                    || (CompareFileTime(&creationTime, &injectThreadTime) < 0)) {
-                    spdlog::get("usvfs")->info("candidate for oldest thread: {0}", threadInfo.th32ThreadID);
-                    injectThread = thread;
-                    injectThreadTime = creationTime;
-                }
+            if ((injectThread == INVALID_HANDLE_VALUE) ||
+                (CompareFileTime(&creationTime, &injectThreadTime) < 0)) {
+              spdlog::get("usvfs")->info("candidate for oldest thread: {0}",
+                                         threadInfo.th32ThreadID);
+              injectThread     = thread;
+              injectThreadTime = creationTime;
             }
-            threadHandles.push_back(thread);
+          }
+          threadHandles.push_back(thread);
         }
       }
       moreThreads = Thread32Next(snapshot, &threadInfo);
     }
     if (injectThread != INVALID_HANDLE_VALUE) {
       spdlog::get("usvfs")->debug("going to inject dll");
-      InjectDLLEIP(processHandle, injectThread, dllName,
-                   initFunction, userData, userDataSize, skipInit);
+      InjectDLLEIP(processHandle, injectThread, dllName, initFunction, userData,
+                   userDataSize, skipInit);
     } else {
       spdlog::get("usvfs")->critical("found no thread to use for injecting");
     }
@@ -492,7 +476,7 @@ void InjectLib::InjectDLL(HANDLE processHandle
     }
     CloseHandle(snapshot);
   } else {
-    InjectDLLEIP(processHandle, threadHandle, dllName,
-                 initFunction, userData, userDataSize, skipInit);
+    InjectDLLEIP(processHandle, threadHandle, dllName, initFunction, userData,
+                 userDataSize, skipInit);
   }
 }

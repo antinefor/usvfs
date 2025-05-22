@@ -21,7 +21,9 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #include "ntdll_declarations.h"
 #include <cassert>
 
-#define LOAD_EXT(mod, name) name = reinterpret_cast<name ## _type>(::GetProcAddress(mod, #name)); assert(name != nullptr)
+#define LOAD_EXT(mod, name)                                                            \
+  name = reinterpret_cast<name##_type>(::GetProcAddress(mod, #name));                  \
+  assert(name != nullptr)
 
 NtQueryDirectoryFile_type NtQueryDirectoryFile;
 NtQueryDirectoryFileEx_type NtQueryDirectoryFileEx;
@@ -34,14 +36,16 @@ NtOpenFile_type NtOpenFile;
 NtCreateFile_type NtCreateFile;
 NtClose_type NtClose;
 RtlDoesFileExists_U_type RtlDoesFileExists_U;
-RtlDosPathNameToRelativeNtPathName_U_WithStatus_type RtlDosPathNameToRelativeNtPathName_U_WithStatus;
+RtlDosPathNameToRelativeNtPathName_U_WithStatus_type
+    RtlDosPathNameToRelativeNtPathName_U_WithStatus;
 RtlReleaseRelativeName_type RtlReleaseRelativeName;
 RtlGetVersion_type RtlGetVersion;
 NtTerminateProcess_type NtTerminateProcess;
 
 static bool ntdll_initialized;
 
-void ntdll_declarations_init() {
+void ntdll_declarations_init()
+{
   if (!ntdll_initialized) {
     HMODULE ntDLLMod = GetModuleHandleW(L"ntdll.dll");
 
@@ -65,8 +69,7 @@ void ntdll_declarations_init() {
   }
 }
 
-static struct __Initializer {
-  __Initializer() {
-    ntdll_declarations_init();
-  }
+static struct __Initializer
+{
+  __Initializer() { ntdll_declarations_init(); }
 } __initializer;

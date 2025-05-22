@@ -39,14 +39,15 @@ using VoidPointerT = OffsetPtrT<void>;
 // managed_windows_shared_memory apparently doesn't support sharing between
 // 64bit and 32bit processes
 using managed_windows_shared_memory = bi::basic_managed_windows_shared_memory<
-  char, bi::rbtree_best_fit<bi::mutex_family, VoidPointerT, 8>, bi::iset_index>;
+    char, bi::rbtree_best_fit<bi::mutex_family, VoidPointerT, 8>, bi::iset_index>;
 
-using SharedMemoryT = managed_windows_shared_memory;
+using SharedMemoryT   = managed_windows_shared_memory;
 using SegmentManagerT = SharedMemoryT::segment_manager;
 
-using VoidAllocatorT = boost::container::scoped_allocator_adaptor<boost::interprocess::allocator<void, SegmentManagerT>>;
+using VoidAllocatorT = boost::container::scoped_allocator_adaptor<
+    boost::interprocess::allocator<void, SegmentManagerT>>;
 using CharAllocatorT = VoidAllocatorT::rebind<char>::other;
 
-using StringT = bc::basic_string<char, std::char_traits<char>, CharAllocatorT> ;
+using StringT = bc::basic_string<char, std::char_traits<char>, CharAllocatorT>;
 
-}  // namespace
+}  // namespace usvfs::shared

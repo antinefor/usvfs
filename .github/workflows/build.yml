@@ -9,7 +9,7 @@ on:
     types: [opened, synchronize, reopened]
 
 env:
-  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+  VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/vcpkg_cache,readwrite
 
 jobs:
   build:
@@ -32,10 +32,23 @@ jobs:
       - uses: actions/checkout@v4
       - uses: lukka/run-vcpkg@v11
 
+      - name: Restore vcpkg cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/vcpkg_cache
+          key: vcpkg-${{ matrix.arch }}-${{ matrix.config }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-${{ matrix.arch }}-${{ matrix.config }}
+
       # configure
       - run: cmake --preset vs2022-windows-${{ matrix.arch }} -B build_${{ matrix.arch }} "-DCMAKE_INSTALL_PREFIX=install/${{ matrix.config }}"
         env:
           VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+
+      - name: Save vcpkg cache
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/vcpkg_cache
+          key: vcpkg-${{ matrix.arch }}-${{ matrix.config }}-${{ hashFiles('vcpkg.json') }}
 
       # build
       - run: cmake --build build_${{ matrix.arch }} --config ${{ matrix.config }} --target INSTALL

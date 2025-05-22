@@ -21,10 +21,11 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "usvfsparameters.h"
-#include <windows_sane.h>
 #include <string>
+#include <windows_sane.h>
 
-namespace usvfs {
+namespace usvfs
+{
 
 /**
  * @brief inject usvfs to a process
@@ -32,20 +33,19 @@ namespace usvfs {
  * @param parameters
  * @param processInfo
  */
-void injectProcess(const std::wstring &applicationPath
-                   , const usvfsParameters &parameters
-                   , const PROCESS_INFORMATION &processInfo);
+void injectProcess(const std::wstring& applicationPath,
+                   const usvfsParameters& parameters,
+                   const PROCESS_INFORMATION& processInfo);
 
 /**
  * @brief inject usvfs to a process
  * @param applicationPath path to usvfs
  * @param parameters
  * @param process process handle to inject to
- * @param thread main thread inside that process. This can be set to INVALID_HANDLE_VALUE in which case
- *               a new thread is created in the process
+ * @param thread main thread inside that process. This can be set to
+ * INVALID_HANDLE_VALUE in which case a new thread is created in the process
  */
-void injectProcess(const std::wstring &applicationPath
-                   , const usvfsParameters &parameters
-                   , HANDLE process, HANDLE thread);
+void injectProcess(const std::wstring& applicationPath,
+                   const usvfsParameters& parameters, HANDLE process, HANDLE thread);
 
-}
+}  // namespace usvfs

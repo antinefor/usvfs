@@ -1,11 +1,11 @@
+#include <boost/interprocess/containers/string.hpp>
+#include <boost/interprocess/shared_memory_object.hpp>
+#include <boost/predef.h>
 #include <gtest/gtest.h>
+#include <shared_memory.h>
+#include <spdlog/sinks/stdout_sinks.h>
 #include <wildcard.h>
 #include <windows_sane.h>
-#include <boost/predef.h>
-#include <shared_memory.h>
-#include <boost/interprocess/shared_memory_object.hpp>
-#include <boost/interprocess/containers/string.hpp>
-#include <spdlog/sinks/stdout_sinks.h>
 
 #define PRIVATE public
 #include <directory_tree.h>
@@ -17,44 +17,48 @@ using namespace usvfs::shared;
 
 using namespace boost::interprocess;
 
-
 static const char g_SHMName[] = "treetest_shm";
-static const char TreeName[] = "treetest_tree";
+static const char TreeName[]  = "treetest_tree";
 
 typedef DirectoryTree<int> TreeType;
 typedef TreeContainer<TreeType> ContainerType;
 
-typedef boost::container::scoped_allocator_adaptor<boost::interprocess::allocator<void, SegmentManagerT>> VoidAllocator;
+typedef boost::container::scoped_allocator_adaptor<
+    boost::interprocess::allocator<void, SegmentManagerT>>
+    VoidAllocator;
 typedef VoidAllocator::rebind<char>::other CharAllocator;
 typedef basic_string<char, std::char_traits<char>, CharAllocator> SHMString;
 typedef DirectoryTree<SHMString> ComplexTreeType;
 typedef TreeContainer<ComplexTreeType> ComplexContainerType;
 
-
-
-template<>
-struct usvfs::shared::SHMDataCreator<int, int> {
-  static int create(int source, const VoidAllocatorT&) {
-    return source;
-  }
+template <>
+struct usvfs::shared::SHMDataCreator<int, int>
+{
+  static int create(int source, const VoidAllocatorT&) { return source; }
 };
 
-template <> inline int usvfs::shared::createDataEmpty<int>(const typename VoidAllocatorT&)
+template <>
+inline int usvfs::shared::createDataEmpty<int>(const typename VoidAllocatorT&)
 {
   return 0;
 }
 
-template <> inline void usvfs::shared::dataAssign<int>(int &destination, const int &source)
+template <>
+inline void usvfs::shared::dataAssign<int>(int& destination, const int& source)
 {
   destination = source;
 }
 
-template <> inline SHMString usvfs::shared::createDataEmpty<SHMString>(const typename VoidAllocatorT &allocator)
+template <>
+inline SHMString
+usvfs::shared::createDataEmpty<SHMString>(const typename VoidAllocatorT& allocator)
 {
   return SHMString("", allocator);
 }
 
-template <> inline void usvfs::shared::dataAssign<SHMString>(SHMString &destination, const SHMString &source)
+template <>
+inline void usvfs::shared::dataAssign<SHMString>(SHMString& destination,
+                                                 const SHMString& source)
 {
   destination.assign(source.c_str());
 }
@@ -108,15 +112,18 @@ TEST(DirectoryTreeTest, FindNode)
   EXPECT_EQ(nullptr, tree->findNode(R"(C:\temp\bla\blubb)").get());
 }
 
-struct TestVisitor {
+struct TestVisitor
+{
   TreeType::NodePtrT lastNode;
-  bool flag40 { false };
+  bool flag40{false};
 
-  void operator()(const TreeType::NodePtrT &node) {
+  void operator()(const TreeType::NodePtrT& node)
+  {
     lastNode = node;
-    flag40 = node->hasFlag(0x40);
+    flag40   = node->hasFlag(0x40);
     logger()->debug("{0} - {1}", lastNode->name(), flag40);
-    //BOOST_LOG_SEV(globalLogger::get(), LogLevel::Debug) << lastNode->name() << " - " << flag40;
+    // BOOST_LOG_SEV(globalLogger::get(), LogLevel::Debug) << lastNode->name() << " - "
+    // << flag40;
   }
 };
 
@@ -129,7 +136,9 @@ TEST(DirectoryTreeTest, VisitPath)
   TestVisitor visitor;
 
   tree->visitPath(R"(C:\temp\bla\blubb)",
-                  TreeType::VisitorFunction([&](const TreeType::NodePtrT &node) { visitor(node); }));
+                  TreeType::VisitorFunction([&](const TreeType::NodePtrT& node) {
+                    visitor(node);
+                  }));
   EXPECT_TRUE(visitor.flag40);
   EXPECT_EQ("bla", visitor.lastNode->name());
 }
@@ -149,7 +158,7 @@ TEST(DirectoryTreeTest, WildCardFind)
     EXPECT_NE(nullptr, tree->node("C:"));
     EXPECT_EQ(1, tree->node("C:")->find("*").size());
     EXPECT_NE(nullptr, tree->node("C:")->node("temp"));
-    EXPECT_EQ(3, tree->node("C:")->node("temp")->find("*").size()); // alternative
+    EXPECT_EQ(3, tree->node("C:")->node("temp")->find("*").size());  // alternative
     // search on the top-level
     EXPECT_EQ(1, tree->find("*").size());
     // * should work
@@ -166,17 +175,17 @@ TEST(DirectoryTreeTest, SHMAllocation)
   EXPECT_NO_THROW({
     ContainerType create(g_SHMName, 64 * 1024);
 
-    { // creation
+    {  // creation
       create.addFile(R"(C:\temp\abc)", 1, false);
       create.addFile(R"(C:\temp\abd)", 2, false);
       create.addFile(R"(C:\temp\ace)", 3, false);
     }
 
-    { // access
+    {  // access
       ContainerType access(g_SHMName, 64 * 1024);
       EXPECT_NE(nullptr, access.get());
       std::vector<TreeType::NodePtrT> res = access->find(R"(C:\temp\*)");
-      EXPECT_EQ(3, res.size()); // matches the three files
+      EXPECT_EQ(3, res.size());  // matches the three files
       EXPECT_EQ(access->m_Self.lock().get(), access->node("C:")->parent().get());
     }
   });
@@ -197,9 +206,9 @@ TEST(DirectoryTreeTest, SHMAllocationError)
 
       EXPECT_EQ(1, tree->node("C:")->node("temp")->node("aa", MissingThrow)->data());
       EXPECT_EQ(26, tree->node("C:")->node("temp")->node("az", MissingThrow)->data());
-    } catch (const std::exception &e) {
+    } catch (const std::exception& e) {
       logger()->error("{0}", e.what());
-      //BOOST_LOG_SEV(globalLogger::get(), LogLevel::Error) << e.what();
+      // BOOST_LOG_SEV(globalLogger::get(), LogLevel::Error) << e.what();
       throw;
     }
   });
@@ -217,16 +226,21 @@ TEST(DirectoryTreeTest, SHMAllocationErrorComplex)
           tree.addFile(name, str, false);
         }
       }
-      EXPECT_STREQ(str.c_str(), tree->node("C:")->node("temp")->node("aa", MissingThrow)->data().c_str());
-      EXPECT_STREQ(str.c_str(), tree->node("C:")->node("temp")->node("az", MissingThrow)->data().c_str());
-    } catch (const std::exception &e) {
+      EXPECT_STREQ(
+          str.c_str(),
+          tree->node("C:")->node("temp")->node("aa", MissingThrow)->data().c_str());
+      EXPECT_STREQ(
+          str.c_str(),
+          tree->node("C:")->node("temp")->node("az", MissingThrow)->data().c_str());
+    } catch (const std::exception& e) {
       logger()->error("{}", e.what());
       throw;
     }
   });
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv)
+{
   auto logger = spdlog::stdout_logger_mt("usvfs");
   logger->set_level(spdlog::level::warn);
   testing::InitGoogleTest(&argc, argv);

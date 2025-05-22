@@ -1,10 +1,7 @@
 #include "semaphore.h"
 #include "exceptionex.h"
 
-RecursiveBenaphore::RecursiveBenaphore()
-  : m_Counter(0)
-  , m_OwnerId(0UL)
-  , m_Recursion(0)
+RecursiveBenaphore::RecursiveBenaphore() : m_Counter(0), m_OwnerId(0UL), m_Recursion(0)
 {
   m_Semaphore = ::CreateSemaphore(nullptr, 1, 1, nullptr);
 }
@@ -23,13 +20,13 @@ void RecursiveBenaphore::wait(DWORD timeout)
       int tries = 3;
       while (::WaitForSingleObject(m_Semaphore, timeout) != WAIT_OBJECT_0) {
         HANDLE owner = ::OpenThread(SYNCHRONIZE, FALSE, m_OwnerId);
-        ON_BLOCK_EXIT([owner] () { ::CloseHandle(owner); });
-        if ((tries <= 0)
-            || (::WaitForSingleObject(owner, 0) == WAIT_OBJECT_0)) {
+        ON_BLOCK_EXIT([owner]() {
+          ::CloseHandle(owner);
+        });
+        if ((tries <= 0) || (::WaitForSingleObject(owner, 0) == WAIT_OBJECT_0)) {
           // owner has quit without releasing the semaphore!
           m_Recursion = 0;
-          spdlog::get("usvfs")
-              ->error("thread {} never released the mutex", m_OwnerId);
+          spdlog::get("usvfs")->error("thread {} never released the mutex", m_OwnerId);
           break;
         } else {
           --tries;

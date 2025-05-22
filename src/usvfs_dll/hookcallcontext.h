@@ -24,39 +24,40 @@ namespace usvfs
 {
 
 /**
- * @brief groups of hooks which may be used to implement each other, so only the first call should be
- *    to one should be manipulated
+ * @brief groups of hooks which may be used to implement each other, so only the first
+ * call should be to one should be manipulated
  */
-enum class MutExHookGroup : int {
-  ALL_GROUPS = 0,       // An ALL_GROUPS-hook prevents all other hooks from becoming active BUT
-                        // hooks from other groups don't prevent the ALL_GROUPS-hook from becoming activated
-  OPEN_FILE = 1,
-  CREATE_PROCESS = 2,
-  FILE_ATTRIBUTES = 3,
-  FIND_FILES = 4,
-  LOAD_LIBRARY = 5,
-  FULL_PATHNAME = 6,
-  SHELL_FILEOP = 7,
-  DELETE_FILE = 8,
-  GET_FILE_VERSION = 9,
+enum class MutExHookGroup : int
+{
+  ALL_GROUPS = 0,  // An ALL_GROUPS-hook prevents all other hooks from becoming active
+                   // BUT hooks from other groups don't prevent the ALL_GROUPS-hook from
+                   // becoming activated
+  OPEN_FILE         = 1,
+  CREATE_PROCESS    = 2,
+  FILE_ATTRIBUTES   = 3,
+  FIND_FILES        = 4,
+  LOAD_LIBRARY      = 5,
+  FULL_PATHNAME     = 6,
+  SHELL_FILEOP      = 7,
+  DELETE_FILE       = 8,
+  GET_FILE_VERSION  = 9,
   GET_MODULE_HANDLE = 10,
-  SEARCH_FILES = 11,
+  SEARCH_FILES      = 11,
 
   NO_GROUP = 12,
-  LAST = NO_GROUP,
+  LAST     = NO_GROUP,
 };
 
-
-class HookCallContext {
+class HookCallContext
+{
 
 public:
-
   HookCallContext();
   HookCallContext(MutExHookGroup group);
   ~HookCallContext();
 
-  HookCallContext(const HookCallContext &reference) = delete;
-  HookCallContext &operator=(const HookCallContext &reference) = delete;
+  HookCallContext(const HookCallContext& reference)            = delete;
+  HookCallContext& operator=(const HookCallContext& reference) = delete;
 
   void restoreLastError();
 
@@ -67,20 +68,20 @@ public:
   bool active() const;
 
 private:
-
   DWORD m_LastError;
   bool m_Active;
   MutExHookGroup m_Group;
-
 };
 
-class FunctionGroupLock {
+class FunctionGroupLock
+{
 public:
   FunctionGroupLock(MutExHookGroup group);
   ~FunctionGroupLock();
+
 private:
   MutExHookGroup m_Group;
   bool m_Active;
 };
 
-} // namespace usvfs
+}  // namespace usvfs

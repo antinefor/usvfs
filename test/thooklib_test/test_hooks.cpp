@@ -1,32 +1,26 @@
 #include <Windows.h>
 #include <gtest/gtest.h>
 
-
-HANDLE WINAPI THCreateFileA_1(LPCSTR lpFileName,
-                              DWORD dwDesiredAccess,
+HANDLE WINAPI THCreateFileA_1(LPCSTR lpFileName, DWORD dwDesiredAccess,
                               DWORD dwShareMode,
                               LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-                              DWORD dwCreationDisposition,
-                              DWORD dwFlagsAndAttributes,
+                              DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes,
                               HANDLE hTemplateFile)
 {
   if (strcmp(lpFileName, INVALID_FILENAME.c_str()) == 0) {
     return MARKERHANDLE;
   } else {
-    HANDLE res = ::CreateFileA(lpFileName, dwDesiredAccess, dwShareMode,
-                         lpSecurityAttributes, dwCreationDisposition,
-                         dwFlagsAndAttributes, hTemplateFile);
+    HANDLE res =
+        ::CreateFileA(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes,
+                      dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
     return res;
   }
 }
 
-
-HANDLE WINAPI THCreateFileW_1(LPCWSTR lpFileName,
-                              DWORD dwDesiredAccess,
+HANDLE WINAPI THCreateFileW_1(LPCWSTR lpFileName, DWORD dwDesiredAccess,
                               DWORD dwShareMode,
                               LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-                              DWORD dwCreationDisposition,
-                              DWORD dwFlagsAndAttributes,
+                              DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes,
                               HANDLE hTemplateFile)
 {
   if (wcscmp(lpFileName, INVALID_FILENAME.w_str()) == 0) {
@@ -38,9 +32,7 @@ HANDLE WINAPI THCreateFileW_1(LPCWSTR lpFileName,
     EXPECT_EQ(0x47, (int)hTemplateFile);
     return MARKERHANDLE;
   } else {
-    return ::CreateFileW(lpFileName, dwDesiredAccess, dwShareMode,
-                         lpSecurityAttributes, dwCreationDisposition,
-                         dwFlagsAndAttributes, hTemplateFile);
+    return ::CreateFileW(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes,
+                         dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
   }
 }
-

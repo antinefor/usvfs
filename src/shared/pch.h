@@ -33,6 +33,7 @@
 #define NOMINMAX
 #endif
 
+// clang-format off
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <ShlObj.h>
@@ -42,14 +43,18 @@
 #include <shlwapi.h>
 #include <fileapi.h>
 #include <DbgHelp.h>
+// clang-format on
 
 #define BOOST_INTERPROCESS_SEGMENT_MANAGER_ABI 1
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/any.hpp>
 #include <boost/container/flat_set.hpp>
-#include <boost/container/slist.hpp>
+#include <boost/container/map.hpp>
 #include <boost/container/scoped_allocator.hpp>
+#include <boost/container/slist.hpp>
+#include <boost/container/string.hpp>
+#include <boost/container/vector.hpp>
 #include <boost/current_function.hpp>
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem.hpp>
@@ -57,9 +62,6 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/format.hpp>
-#include <boost/container/map.hpp>
-#include <boost/container/string.hpp>
-#include <boost/container/vector.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/interprocess/managed_windows_shared_memory.hpp>
 #include <boost/interprocess/offset_ptr.hpp>
@@ -75,8 +77,8 @@
 #include <boost/predef.h>
 #include <boost/static_assert.hpp>
 #include <boost/thread.hpp>
-#include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
+#include <boost/thread/shared_mutex.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/type_traits.hpp>
 

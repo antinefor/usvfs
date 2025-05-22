@@ -35,18 +35,24 @@ struct std_boost_exception : virtual boost::exception, virtual std::exception
   }
 };
 
-struct incompatibility_error : std_boost_exception {};
-struct usage_error : std_boost_exception {};
-struct data_error : std_boost_exception {};
-struct file_not_found_error : std_boost_exception {};
-struct timeout_error : std_boost_exception {};
-struct unknown_error : std_boost_exception {};
-struct node_missing_error : std_boost_exception {};
+struct incompatibility_error : std_boost_exception
+{};
+struct usage_error : std_boost_exception
+{};
+struct data_error : std_boost_exception
+{};
+struct file_not_found_error : std_boost_exception
+{};
+struct timeout_error : std_boost_exception
+{};
+struct unknown_error : std_boost_exception
+{};
+struct node_missing_error : std_boost_exception
+{};
 
 #define USVFS_THROW_EXCEPTION(x) BOOST_THROW_EXCEPTION(x)
 
-void logExtInfo(const std::exception &e, LogLevel logLevel = LogLevel::Warning);
-
+void logExtInfo(const std::exception& e, LogLevel logLevel = LogLevel::Warning);
 
 namespace usvfs::shared
 {
@@ -55,14 +61,10 @@ class windows_error : public std::runtime_error
 {
 public:
   windows_error(const std::string& message, int errorcode = GetLastError())
-    : runtime_error(constructMessage(message, errorcode)), m_ErrorCode(errorcode)
-  {
-  }
+      : runtime_error(constructMessage(message, errorcode)), m_ErrorCode(errorcode)
+  {}
 
-  int getErrorCode() const
-  {
-    return m_ErrorCode;
-  }
+  int getErrorCode() const { return m_ErrorCode; }
 
 private:
   int m_ErrorCode;
@@ -70,14 +72,10 @@ private:
   std::string constructMessage(const std::string& input, int errorcode);
 };
 
-
 class guard
 {
 public:
-  explicit guard(std::function<void ()> f)
-    : m_f(std::move(f))
-  {
-  }
+  explicit guard(std::function<void()> f) : m_f(std::move(f)) {}
 
   ~guard()
   {
@@ -90,10 +88,10 @@ public:
   guard& operator=(const guard&);
 
 private:
-  std::function<void ()> m_f;
+  std::function<void()> m_f;
 };
 
-} // namespace
+}  // namespace usvfs::shared
 
 #define CONCATENATE_DIRECT(s1, s2) s1##s2
 #define CONCATENATE(s1, s2) CONCATENATE_DIRECT(s1, s2)

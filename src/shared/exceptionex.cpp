@@ -36,39 +36,47 @@ std::string windows_error::constructMessage(const std::string& input, int inErro
 
   // TODO: the message is not english?
   if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-    nullptr, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&buffer, 0, nullptr) == 0) {
+                     nullptr, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                     (LPSTR)&buffer, 0, nullptr) == 0) {
     finalMessage << " (errorcode " << errorCode << ")";
   } else {
     LPSTR lastChar = buffer + strlen(buffer) - 2;
-    *lastChar = '\0';
+    *lastChar      = '\0';
     finalMessage << " (" << buffer << " [" << errorCode << "])";
-    LocalFree(buffer); // allocated by FormatMessage
+    LocalFree(buffer);  // allocated by FormatMessage
   }
 
-  SetLastError(errorCode); // restore error code because FormatMessage might have modified it
+  SetLastError(
+      errorCode);  // restore error code because FormatMessage might have modified it
   return finalMessage.str();
 }
 
-} // namespace
+}  // namespace usvfs::shared
 
-
-void logExtInfo(const std::exception &e, LogLevel logLevel)
+void logExtInfo(const std::exception& e, LogLevel logLevel)
 {
   std::string content;
 
-  if (const std::string *msg = boost::get_error_info<ex_msg>(e)) {
+  if (const std::string* msg = boost::get_error_info<ex_msg>(e)) {
     content = *msg;
   }
 
-  if (const DWORD *errorCode = boost::get_error_info<ex_win_errcode>(e)) {
+  if (const DWORD* errorCode = boost::get_error_info<ex_win_errcode>(e)) {
     content = std::string("error: ") + winapi::ex::ansi::errorString(*errorCode);
   }
 
-  switch (logLevel)
-  {
-    case LogLevel::Debug:    spdlog::get("usvfs")->debug(content); break;
-    case LogLevel::Info:     spdlog::get("usvfs")->info(content); break;
-    case LogLevel::Warning:  spdlog::get("usvfs")->warn(content); break;
-    case LogLevel::Error:    spdlog::get("usvfs")->error(content); break;
+  switch (logLevel) {
+  case LogLevel::Debug:
+    spdlog::get("usvfs")->debug(content);
+    break;
+  case LogLevel::Info:
+    spdlog::get("usvfs")->info(content);
+    break;
+  case LogLevel::Warning:
+    spdlog::get("usvfs")->warn(content);
+    break;
+  case LogLevel::Error:
+    spdlog::get("usvfs")->error(content);
+    break;
   }
 }

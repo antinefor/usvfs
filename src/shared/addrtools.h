@@ -41,23 +41,24 @@ inline std::ptrdiff_t AddrDiff(LPVOID lhs, LPVOID rhs)
   return reinterpret_cast<LPBYTE>(lhs) - reinterpret_cast<LPBYTE>(rhs);
 }
 
-
 // implicitly cast pointer to void*, from there cast to target type.
 // This is supposed to be safer than directly reinterpret-casting
 template <typename T>
-inline T void_ptr_cast(void *ptr)
+inline T void_ptr_cast(void* ptr)
 {
   return reinterpret_cast<T>(ptr);
 }
 
 template <>
-inline int64_t void_ptr_cast(void *ptr) {
+inline int64_t void_ptr_cast(void* ptr)
+{
   return reinterpret_cast<int64_t>(ptr);
 }
 
 template <>
-inline uint64_t void_ptr_cast(void *ptr) {
+inline uint64_t void_ptr_cast(void* ptr)
+{
   return reinterpret_cast<uint64_t>(ptr);
 }
 
-} // namespace
+}  // namespace usvfs::shared

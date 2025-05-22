@@ -22,12 +22,14 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 
 #include <windows_sane.h>
 
-namespace HookLib {
+namespace HookLib
+{
 
-/// \brief reimplementation of GetProcAddress to circumvent foreign hooks of GetProcAddress like AcLayer
+/// \brief reimplementation of GetProcAddress to circumvent foreign hooks of
+/// GetProcAddress like AcLayer
 /// \param module handle to the module that contains the function or variable
 /// \param functionName function to retrieve the address of
 /// \return address of the exported function
 FARPROC MyGetProcAddress(HMODULE module, LPCSTR functionName);
 
-}
+}  // namespace HookLib

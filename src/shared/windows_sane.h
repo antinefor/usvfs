@@ -20,9 +20,8 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
 
-
 #ifndef NOMINMAX
-  #define NOMINMAX
+#define NOMINMAX
 #endif
 
 #define WIN32_LEAN_AND_MEAN

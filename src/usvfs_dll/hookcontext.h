@@ -20,14 +20,14 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
 
-#include "redirectiontree.h"
-#include "tree_container.h"
 #include "dllimport.h"
+#include "redirectiontree.h"
 #include "semaphore.h"
-#include <usvfsparameters.h>
-#include <usvfsparametersprivate.h>
+#include "tree_container.h"
 #include <directory_tree.h>
 #include <exceptionex.h>
+#include <usvfsparameters.h>
+#include <usvfsparametersprivate.h>
 #include <winapi.h>
 
 namespace usvfs
@@ -43,61 +43,48 @@ class HookContext
 {
 
 public:
-  typedef std::unique_ptr<const HookContext, void (*)(const HookContext *)>
-      ConstPtr;
-  typedef std::unique_ptr<HookContext, void (*)(HookContext *)> Ptr;
+  typedef std::unique_ptr<const HookContext, void (*)(const HookContext*)> ConstPtr;
+  typedef std::unique_ptr<HookContext, void (*)(HookContext*)> Ptr;
   typedef unsigned int DataIDT;
 
 public:
   HookContext(const usvfsParameters& params, HMODULE module);
 
-  HookContext(const HookContext &reference) = delete;
+  HookContext(const HookContext& reference) = delete;
 
   DLLEXPORT ~HookContext();
 
-  HookContext &operator=(const HookContext &reference) = delete;
+  HookContext& operator=(const HookContext& reference) = delete;
 
-  static void remove(const char *instance);
+  static void remove(const char* instance);
 
   /**
    * @brief get read access to the context.
    * @return smart ptr to the context. mutex will automatically be released when
    * this leaves scope
    */
-  static ConstPtr readAccess(const char *source);
+  static ConstPtr readAccess(const char* source);
 
   /**
    * @brief get write access to the context.
    * @return smart ptr to the context. mutex will automatically be released when
    * this leaves scope
    */
-  static Ptr writeAccess(const char *source);
+  static Ptr writeAccess(const char* source);
 
   /**
    * @return table containing file redirection information
    */
-  RedirectionTreeContainer &redirectionTable()
-  {
-    return m_Tree;
-  }
+  RedirectionTreeContainer& redirectionTable() { return m_Tree; }
 
   /**
    * @return table containing file redirection information
    */
-  const RedirectionTreeContainer &redirectionTable() const
-  {
-    return m_Tree;
-  }
+  const RedirectionTreeContainer& redirectionTable() const { return m_Tree; }
 
-  RedirectionTreeContainer &inverseTable()
-  {
-    return m_InverseTree;
-  }
+  RedirectionTreeContainer& inverseTable() { return m_InverseTree; }
 
-  const RedirectionTreeContainer &inverseTable() const
-  {
-    return m_InverseTree;
-  }
+  const RedirectionTreeContainer& inverseTable() const { return m_InverseTree; }
 
   /**
    * @return the parameters passed in on dll initialisation
@@ -107,10 +94,7 @@ public:
   /**
    * @return true if usvfs is running in debug mode
    */
-  bool debugMode() const
-  {
-    return m_DebugMode;
-  }
+  bool debugMode() const { return m_DebugMode; }
 
   /**
    * @return path to the calling library itself
@@ -123,7 +107,8 @@ public:
    * the context
    *       as a whole. The caller himself has to ensure thread safety
    */
-  template <typename T> T &customData(DataIDT id) const
+  template <typename T>
+  T& customData(DataIDT id) const
   {
     auto iter = m_CustomData.find(id);
     if (iter == m_CustomData.end()) {
@@ -132,7 +117,7 @@ public:
     // std::map is supposed to not invalidate any iterators when elements are
     // added
     // so it should be safe to return a pointer here
-    T *res = boost::any_cast<T>(&iter->second);
+    T* res = boost::any_cast<T>(&iter->second);
     return *res;
   }
 
@@ -140,7 +125,7 @@ public:
   void unregisterCurrentProcess();
   std::vector<DWORD> registeredProcesses() const;
 
-  void blacklistExecutable(const std::wstring &executableName);
+  void blacklistExecutable(const std::wstring& executableName);
   void clearExecutableBlacklist();
   BOOL executableBlacklisted(LPCWSTR lpApplicationName, LPCWSTR lpCommandLine) const;
 
@@ -150,33 +135,34 @@ public:
 
   void addSkipDirectory(const std::wstring& directory);
   void clearSkipDirectories();
-  std::vector<std::string> skipDirectories () const;
+  std::vector<std::string> skipDirectories() const;
 
-  void forceLoadLibrary(const std::wstring &processName, const std::wstring &libraryPath);
+  void forceLoadLibrary(const std::wstring& processName,
+                        const std::wstring& libraryPath);
   void clearLibraryForceLoads();
-  std::vector<std::wstring> librariesToForceLoad(const std::wstring &processName);
+  std::vector<std::wstring> librariesToForceLoad(const std::wstring& processName);
 
-  void setDebugParameters(
-    LogLevel level, CrashDumpsType dumpType, const std::string& dumpPath,
-    std::chrono::milliseconds delayProcess);
+  void setDebugParameters(LogLevel level, CrashDumpsType dumpType,
+                          const std::string& dumpPath,
+                          std::chrono::milliseconds delayProcess);
 
   void updateParameters() const;
 
   void registerDelayed(std::future<int> delayed);
 
-  std::vector<std::future<int>> &delayed();
+  std::vector<std::future<int>>& delayed();
 
 private:
-  static void unlock(HookContext *instance);
-  static void unlockShared(const HookContext *instance);
+  static void unlock(HookContext* instance);
+  static void unlockShared(const HookContext* instance);
 
   SharedParameters* retrieveParameters(const usvfsParameters& params);
 
 private:
-  static HookContext *s_Instance;
+  static HookContext* s_Instance;
 
   shared::SharedMemoryT m_ConfigurationSHM;
-  SharedParameters *m_Parameters{nullptr};
+  SharedParameters* m_Parameters{nullptr};
   RedirectionTreeContainer m_Tree;
   RedirectionTreeContainer m_InverseTree;
 
@@ -192,25 +178,23 @@ private:
   mutable RecursiveBenaphore m_Mutex;
 };
 
-} // namespace
+}  // namespace usvfs
 
-
-extern "C" DLLEXPORT usvfs::HookContext* WINAPI usvfsCreateHookContext(
-  const usvfsParameters& params, HMODULE module);
-
+extern "C" DLLEXPORT usvfs::HookContext* WINAPI
+usvfsCreateHookContext(const usvfsParameters& params, HMODULE module);
 
 class PreserveGetLastError
 {
 public:
   PreserveGetLastError() : m_err(GetLastError()) {}
   ~PreserveGetLastError() { SetLastError(m_err); }
+
 private:
   DWORD m_err;
 };
 
 // declare an identifier that is guaranteed to be unique across the application
-#define DATA_ID(name)                                                          \
-  static const usvfs::HookContext::DataIDT name = __COUNTER__
+#define DATA_ID(name) static const usvfs::HookContext::DataIDT name = __COUNTER__
 
 // set of macros. These ensure a call context is created but most of all these
 // ensure exceptions are caught.
@@ -218,30 +202,29 @@ private:
 #define READ_CONTEXT() HookContext::readAccess(__MYFUNC__)
 #define WRITE_CONTEXT() HookContext::writeAccess(__MYFUNC__)
 
-#define HOOK_START_GROUP(group)                                                \
-  try {                                                                        \
+#define HOOK_START_GROUP(group)                                                        \
+  try {                                                                                \
     HookCallContext callContext(group);
 
-#define HOOK_START                                                             \
-  try {                                                                        \
+#define HOOK_START                                                                     \
+  try {                                                                                \
     HookCallContext callContext;
 
-#define HOOK_END                                                               \
-  }                                                                            \
-  catch (const std::exception &e)                                              \
-  {                                                                            \
-    spdlog::get("usvfs")                                                       \
-        ->error("exception in {0}: {1}", __MYFUNC__, e.what());                \
-    logExtInfo(e);                                                             \
+#define HOOK_END                                                                       \
+  }                                                                                    \
+  catch (const std::exception& e)                                                      \
+  {                                                                                    \
+    spdlog::get("usvfs")->error("exception in {0}: {1}", __MYFUNC__, e.what());        \
+    logExtInfo(e);                                                                     \
   }
 
-#define HOOK_ENDP(param)                                                       \
-  }                                                                            \
-  catch (const std::exception &e)                                              \
-  {                                                                            \
-    spdlog::get("usvfs")                                                       \
-        ->error("exception in {0} ({1}): {2}", __MYFUNC__, param, e.what());   \
-    logExtInfo(e);                                                             \
+#define HOOK_ENDP(param)                                                               \
+  }                                                                                    \
+  catch (const std::exception& e)                                                      \
+  {                                                                                    \
+    spdlog::get("usvfs")->error("exception in {0} ({1}): {2}", __MYFUNC__, param,      \
+                                e.what());                                             \
+    logExtInfo(e);                                                                     \
   }
 
 #define PRE_REALCALL callContext.restoreLastError();

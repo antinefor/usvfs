@@ -20,17 +20,23 @@ along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include <stringcast.h>
 
-namespace usvfs {
-namespace shared {
+namespace usvfs
+{
+namespace shared
+{
 
-template <typename ToT, typename CharT, typename Traits, typename Allocator>
-class string_cast_impl<ToT, boost::container::basic_string<CharT, Traits, Allocator>> {
-public:
-  static ToT cast(const boost::container::basic_string<CharT, Traits, Allocator> &source, CodePage codePage, size_t sourceLength)
+  template <typename ToT, typename CharT, typename Traits, typename Allocator>
+  class string_cast_impl<ToT, boost::container::basic_string<CharT, Traits, Allocator>>
   {
-    return string_cast_impl<ToT, const CharT*>::cast(source.c_str(), codePage, sourceLength);
-  }
-};
+  public:
+    static ToT
+    cast(const boost::container::basic_string<CharT, Traits, Allocator>& source,
+         CodePage codePage, size_t sourceLength)
+    {
+      return string_cast_impl<ToT, const CharT*>::cast(source.c_str(), codePage,
+                                                       sourceLength);
+    }
+  };
 
-}
-}
+}  // namespace shared
+}  // namespace usvfs

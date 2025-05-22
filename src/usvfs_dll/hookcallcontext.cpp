@@ -19,15 +19,17 @@ You should have received a copy of the GNU General Public License
 along with usvfs. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "hookcallcontext.h"
-#include <logging.h>
 #include "hookcontext.h"
+#include <logging.h>
 
 namespace usvfs
 {
 
-class HookStack {
+class HookStack
+{
 public:
-  static HookStack &instance() {
+  static HookStack& instance()
+  {
     PreserveGetLastError boostChangesGetLastError;
     if (s_Instance.get() == nullptr) {
       s_Instance.reset(new HookStack());
@@ -35,9 +37,10 @@ public:
     return *s_Instance.get();
   }
 
-  bool setGroup(MutExHookGroup group) {
-    if (m_ActiveGroups.test(static_cast<size_t>(group))
-        || m_ActiveGroups.test(static_cast<size_t>(MutExHookGroup::ALL_GROUPS))) {
+  bool setGroup(MutExHookGroup group)
+  {
+    if (m_ActiveGroups.test(static_cast<size_t>(group)) ||
+        m_ActiveGroups.test(static_cast<size_t>(MutExHookGroup::ALL_GROUPS))) {
       return false;
     } else {
       m_ActiveGroups.set(static_cast<size_t>(group), true);
@@ -45,15 +48,13 @@ public:
     }
   }
 
-  void unsetGroup(MutExHookGroup group) {
+  void unsetGroup(MutExHookGroup group)
+  {
     m_ActiveGroups.set(static_cast<size_t>(group), false);
   }
 
 private:
-
-  HookStack() {
-
-  }
+  HookStack() {}
 
 private:
   static boost::thread_specific_ptr<HookStack> s_Instance;
@@ -62,21 +63,16 @@ private:
 
 boost::thread_specific_ptr<HookStack> HookStack::s_Instance;
 
-
-HookCallContext::HookCallContext()
-  : m_Active(true)
-  , m_Group(MutExHookGroup::NO_GROUP)
+HookCallContext::HookCallContext() : m_Active(true), m_Group(MutExHookGroup::NO_GROUP)
 {
   updateLastError();
 }
 
 HookCallContext::HookCallContext(MutExHookGroup group)
-  : m_Active(HookStack::instance().setGroup(group))
-  , m_Group(group)
+    : m_Active(HookStack::instance().setGroup(group)), m_Group(group)
 {
   updateLastError();
 }
-
 
 HookCallContext::~HookCallContext()
 {
@@ -96,22 +92,21 @@ void HookCallContext::updateLastError(DWORD lastError)
   m_LastError = lastError;
 }
 
-
 bool HookCallContext::active() const
 {
   return m_Active;
 }
 
-FunctionGroupLock::FunctionGroupLock(MutExHookGroup group)
-  : m_Group(group)
+FunctionGroupLock::FunctionGroupLock(MutExHookGroup group) : m_Group(group)
 {
   m_Active = HookStack::instance().setGroup(m_Group);
 }
 
-FunctionGroupLock::~FunctionGroupLock() {
+FunctionGroupLock::~FunctionGroupLock()
+{
   if (m_Active) {
     HookStack::instance().unsetGroup(m_Group);
   }
 }
 
-} // namespace usvfs
+}  // namespace usvfs
