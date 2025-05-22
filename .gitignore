@@ -2,6 +2,8 @@
 /bin
 /lib
 /test/bin
+/build*
+/install
 
 # local overides
 /vsbuild/external_dependencies_local.props
@@ -11,6 +13,9 @@
 /vsbuild/ReleaseTest
 /vsbuild/Debug
 /vsbuild/DebugTest
+/vsbuild32
+/vsbuild64
+CMakeUserPresets.json
 
 # test "side effects"
 /test/temp

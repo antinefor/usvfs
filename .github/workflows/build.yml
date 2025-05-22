@@ -2,12 +2,14 @@ name: Build USVFS
 
 on:
   push:
-    branches: master
+    branches: [master, dev/cmake]
+    tags:
+      - "*"
   pull_request:
     types: [opened, synchronize, reopened]
 
 env:
-  BOOST_PREBUILT_URL: "https://github.com/ModOrganizer2/mob/releases/download/2.5-dependencies/boost_prebuilt_1_85_0.7z"
+  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
 jobs:
   build:
@@ -16,104 +18,115 @@ jobs:
       matrix:
         arch: [x86, x64]
         config: [Debug, Release]
-        tests: ["", "Test"]
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      # https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-github-actions-cache
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v7
         with:
-          submodules: true
-      - name: Fetch Boost prebuilt
-        run: |
-          Invoke-WebRequest -Uri ${env:BOOST_PREBUILT_URL} -OutFile boost.7z
-          Expand-7ZipArchive -Path boost.7z -Destination .\boost
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v2
-        with:
-          msbuild-architecture: ${{ matrix.arch }}
-      - if: matrix.tests == 'Test'
-        name: Fetch googletest
-        uses: actions/checkout@v4
-        with:
-          repository: google/googletest
-          path: ./googletest
-      - if: matrix.tests == 'Test'
-        name: Build googletest
-        run: |
-          cmake -B googletest/build_${{ matrix.arch }} `
-            -A ${{ matrix.arch == 'x86' && 'Win32' || 'x64' }} `
-            -Dgtest_force_shared_crt=ON `
-            googletest
-          cmake --build googletest/build_${{ matrix.arch }} --config ${{ matrix.config }}
-      - name: Build
-        run: |
-          msbuild -nologo `
-            -maxCpuCount "-property:UseMultiToolTask=true" "-property:EnforceProcessCountAcrossBuilds=true" `
-            "-property:Configuration=${{ matrix.config }}${{ matrix.tests }}" `
-            "-property:Platform=${{ matrix.arch }}" `
-            "-property:BOOST_PATH=..\boost" `
-            "-property:GTEST_PATH=..\googletest" `
-            "-property:GTEST_LIBDIR=..\googletest\build_${{ matrix.arch }}\lib\${{ matrix.config }}" `
-            "-property:RunCodeAnalysis=false" `
-            .\vsbuild\usvfs.sln
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
-      - if: matrix.tests == 'Test' && matrix.config == 'Debug'
-        uses: actions/upload-artifact@master
+      # checkout USVFS and vcpkg
+      - uses: actions/checkout@v4
+      - uses: lukka/run-vcpkg@v11
         with:
-          name: usvfs-libs_${{ matrix.arch }}
+          vcpkgGitCommitId: f61a294e765b257926ae9e9d85f96468a0af74e7
+          vcpkgJsonGlob: ${{ github.workspace }}/usvfs/vcpkg.json
+
+      # configure
+      - run: cmake --preset vs2022-windows-${{ matrix.arch }} -B build_${{ matrix.arch }} "-DCMAKE_INSTALL_PREFIX=install/${{ matrix.config }}"
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+
+      # build
+      - run: cmake --build build_${{ matrix.arch }} --config ${{ matrix.config }} --target INSTALL
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+
+      # package install
+      - uses: actions/upload-artifact@master
+        with:
+          name: usvfs_${{ matrix.config }}_${{ matrix.arch }}
+          path: ./install/${{ matrix.config }}
+
+      # package test/dlls/etc. for tests
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: usvfs-libs_${{ matrix.config }}_${{ matrix.arch }}
           path: ./lib
-      - if: matrix.tests == 'Test' && matrix.config == 'Debug'
-        uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@master
         with:
-          name: usvfs-bins_${{ matrix.arch }}
+          name: usvfs-bins_${{ matrix.config }}_${{ matrix.arch }}
           path: ./bin
-      - if: matrix.tests == 'Test' && matrix.config == 'Debug'
-        uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@master
         with:
-          name: usvfs-tests_${{ matrix.arch }}
+          name: usvfs-tests_${{ matrix.config }}_${{ matrix.arch }}
           path: ./test/bin
 
-  # merge x86 / x64 artifacts
-  merge-artifacts:
+  # merge x86 / x64 artifacts for tests (root bin/lib and test folder)
+  merge-artifacts-for-tests:
     runs-on: ubuntu-latest
-    name: Merge Artifacts for Tests
+    name: Merge Test Artifacts
     needs: build
+    strategy:
+      matrix:
+        config: [Debug, Release]
     steps:
       - name: Merge USVFS libs
         uses: actions/upload-artifact/merge@v4
         with:
-          name: usvfs-libs
-          pattern: usvfs-libs_*
+          name: usvfs-libs_${{ matrix.config }}
+          pattern: usvfs-libs_${{ matrix.config }}_*
       - name: Merge USVFS bins
         uses: actions/upload-artifact/merge@v4
         with:
-          name: usvfs-bins
-          pattern: usvfs-bins_*
+          name: usvfs-bins_${{ matrix.config }}
+          pattern: usvfs-bins_${{ matrix.config }}_*
       - name: Merge USVFS tests
         uses: actions/upload-artifact/merge@v4
         with:
-          name: usvfs-tests
-          pattern: usvfs-tests_*
+          name: usvfs-tests_${{ matrix.config }}
+          pattern: usvfs-tests_${{ matrix.config }}_*
+
+  # merge x86 / x64 artifacts (install folder)
+  merge-artifacts-for-release:
+    runs-on: ubuntu-latest
+    name: Merge Install Artifacts
+    needs: build
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Merge USVFS install
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: usvfs_${{ matrix.config }}
+          pattern: usvfs_${{ matrix.config }}_*
 
   test:
     name: Test USVFS
-    needs: merge-artifacts
+    needs: merge-artifacts-for-tests
     runs-on: windows-2022
     strategy:
       matrix:
+        config: [Debug, Release]
         arch: [x86, x64]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@master
         with:
-          name: usvfs-libs
+          name: usvfs-libs_${{ matrix.config }}
           path: ./lib
       - uses: actions/download-artifact@master
         with:
-          name: usvfs-bins
+          name: usvfs-bins_${{ matrix.config }}
           path: ./bin
       - uses: actions/download-artifact@master
         with:
-          name: usvfs-tests
+          name: usvfs-tests_${{ matrix.config }}
           path: ./test/bin
       - run: ./test/bin/shared_test_${{ matrix.arch }}.exe
         if: always()
@@ -130,8 +143,39 @@ jobs:
       - uses: actions/upload-artifact@master
         if: always()
         with:
-          name: tests-outputs_${{ matrix.arch }}
+          name: tests-outputs_${{ matrix.config }}_${{ matrix.arch }}
           path: ./test/temp
           if-no-files-found: ignore
           retention-days: 7
           overwrite: true
+
+  publish:
+    if: github.ref_type == 'tag'
+    needs: [merge-artifacts-for-release, test]
+    runs-on: windows-2022
+    permissions:
+      contents: write
+    steps:
+      # USVFS does not use different names for debug and release so we are going to
+      # retrieve both install artifacts and put them under install/ and install/debug/
+
+      - name: Download Release Artifact
+        uses: actions/download-artifact@master
+        with:
+          name: usvfs_Release
+          path: ./install
+
+      - name: Download Debug Artifact
+        uses: actions/download-artifact@master
+        with:
+          name: usvfs_Debug
+          path: ./install/debug
+
+      - name: Create USVFS Base archive
+        run: 7z a usvfs_${{ github.ref_name }}.7z ./install/*
+
+      - name: Publish Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release create --draft=false --notes="Release ${{ github.ref_name }}" "${{ github.ref_name }}" ./usvfs_${{ github.ref_name }}.7z
